@@ -56,10 +56,10 @@ export default function Sidebar() {
           <div>
             {/* Logo */}
             <div className="flex justify-center mb-8">
-              <div className="w-25 h-25 bg-white rounded-full flex items-center justify-center p-1 shadow-sm">
+              <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center p-1 shadow-sm">
                 <img 
-                  src="/image.png" 
-                  className="h-25 w-25 object-contain" 
+                  src="/logo.png" 
+                  className="h-16 w-16 object-contain" 
                   alt="Logo" 
                 />
               </div>
@@ -68,7 +68,7 @@ export default function Sidebar() {
             {/* Navigation Links */}
             <div className="space-y-1">
               {[
-                { href: "/Dashboard", icon: "/dashboard.png", label: "Dashboard" },
+                { href: "/dashboard", icon: "/dashboard.png", label: "Dashboard" },
                 { href: "/Attendance", icon: "/calender.png", label: "Attendance History" },
                 { href: "/Leave", icon: "/leave.png", label: "Leave Management" },
                 { href: "/Fees", icon: "/wallet.png", label: "Fees Paid" },
