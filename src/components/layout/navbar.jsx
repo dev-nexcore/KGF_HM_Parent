@@ -6,14 +6,6 @@ import React from "react";
 export default function Navbar({ children, title = "Welcome Back, Parent", subtitle = "-have a great day" }) {
   return (
     <section className="flex-1 bg-white flex flex-col">
-      <header className="flex items-center justify-between px-8 py-4 bg-[#BEC5AD]  md:px-8 pl-16 md:pl-8">
-        <div className="flex-1">
-          <h1 className="text-2xl font-semibold text-black">{title}</h1>
-          <p className="italic text-black text-sm -mt-1">{subtitle}</p>
-        </div>
-        <div className="w-15 h-15 bg-white rounded-full border border-gray-300 flex-shrink-0" />
-      </header>
-      <main className="flex-1 p-6 md:p-6 pt-4">
       <header className="flex items-center justify-between px-4 sm:px-5 md:px-6 py-1 sm:py-1.5 md:py-2 lg:py-2.5 bg-[#BEC5AD] pl-6 sm:pl-8 md:pl-10 lg:pl-6">
         <div className="flex-1 ml-2 sm:ml-3 md:ml-4 pl-6 -mt-3" >
           <h1 className="font-semibold leading-tight text-xs sm:text-sm md:text-base lg:text-lg xl:text-xl">
