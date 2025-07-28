@@ -58,7 +58,11 @@ export default function Sidebar() {
             <div className="flex justify-center mb-8">
               <div className="w-25 h-25 bg-white rounded-full flex items-center justify-center p-1 shadow-sm">
                 <img 
+<<<<<<< HEAD
                   src="/logo.png" 
+=======
+                  src="/image.png" 
+>>>>>>> 47d3ca6bd606bd688c67555f84394e45557079db
                   className="h-25 w-25 object-contain" 
                   alt="Logo" 
                 />
@@ -68,7 +72,11 @@ export default function Sidebar() {
             {/* Navigation Links */}
             <div className="space-y-1">
               {[
+<<<<<<< HEAD
                 { href: "/Dashboard", icon: "/dashboard1.png", label: "Dashboard" },
+=======
+                { href: "/Dashboard", icon: "/dashboard.png", label: "Dashboard" },
+>>>>>>> 47d3ca6bd606bd688c67555f84394e45557079db
                 { href: "/Attendance", icon: "/calender.png", label: "Attendance History" },
                 { href: "/Leave", icon: "/leave.png", label: "Leave Management" },
                 { href: "/Fees", icon: "/wallet.png", label: "Fees Paid" },
@@ -128,4 +136,8 @@ export default function Sidebar() {
       </>
     </div>
   );
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> 47d3ca6bd606bd688c67555f84394e45557079db
