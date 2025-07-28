@@ -68,7 +68,6 @@ export default function Sidebar() {
             {/* Navigation Links */}
             <div className="space-y-1">
               {[
-                { href: "/Dashboard", icon: "/dashboard1.png", label: "Dashboard" },
                 { href: "/Dashboard", icon: "/dashboard.png", label: "Dashboard" },
                 { href: "/Attendance", icon: "/calender.png", label: "Attendance History" },
                 { href: "/Leave", icon: "/leave.png", label: "Leave Management" },
