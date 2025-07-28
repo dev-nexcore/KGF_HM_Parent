@@ -1,6 +1,6 @@
 'use client';
 import Navbar from "@/components/layout/navbar";
-import Sidebar from "@/components/layout/sidebar";
+import Sidebar from "@/components/layout/Sidebar";
 import FeesSection from "@/components/FeesPaid/Fees";
 export default function FeesPage() {
   return (

@@ -1,5 +1,5 @@
 import Navbar from '@/components/layout/navbar';
-import Sidebar from '@/components/layout/sidebar';
+import Sidebar from '@/components/layout/Sidebar';
 import MakePaymentsPage from '@/components/Makepayments/Makepayments';
 
 

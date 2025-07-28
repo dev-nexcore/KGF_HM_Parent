@@ -1,6 +1,6 @@
 'use client';
 import Navbar from "@/components/layout/navbar";
-import Sidebar from "@/components/layout/sidebar";
+import Sidebar from "@/components/layout/Sidebar";
 import AttendanceTable from "@/components/Attendance/AttendanceTable";
 
 export default function AttendancePage() {
