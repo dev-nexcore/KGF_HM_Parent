@@ -51,7 +51,7 @@ export default function Payments() {
               <h3 className="text-sm sm:text-md md:text-lg font-bold text-black mb-3 sm:mb-4">Select Payment Method:</h3>
 
               <div
-                className="border p-4 sm:p-6 md:p-10 rounded-lg bg-white"
+                className="p-4 sm:p-6 md:p-10 rounded-lg bg-white"
                 style={{
                   boxShadow:
                     'inset 5px 0 8px rgba(0,0,0,0.1), inset -5px 0 8px rgba(0,0,0,0.1), inset 0 5px 8px rgba(0,0,0,0.1)',
@@ -69,7 +69,7 @@ export default function Payments() {
                       className="w-4 h-4 sm:w-5 sm:h-5 accent-[#1109FF]"
                     />
                     <span className="flex items-center gap-2 text-sm sm:text-[15px] font-semibold">
-                      <div className = "text-sm sm:text-base" /> UPI
+                      <FaMobileAlt className="text-sm sm:text-base" /> UPI
                     </span>
                   </label>
 
@@ -84,7 +84,7 @@ export default function Payments() {
                       className="w-4 h-4 sm:w-5 sm:h-5 accent-[#1109FF]"
                     />
                     <span className="flex items-center gap-2 text-sm sm:text-[15px] font-semibold">
-                      <div className="text-sm sm:text-base" /> Net Banking
+                      <FaUniversity className="text-sm sm:text-base" /> Net Banking
                     </span>
                   </label>
 
@@ -100,7 +100,7 @@ export default function Payments() {
                         className="w-4 h-4 sm:w-5 sm:h-5 accent-[#1109FF]"
                       />
                       <span className="flex items-center gap-2 text-sm sm:text-[15px] font-semibold">
-                        <div className="text-sm sm:text-base" /> Credit or Debit Card
+                        <FaCreditCard className="text-sm sm:text-base" /> Credit or Debit Card
                       </span>
                     </span>
 
@@ -121,19 +121,19 @@ export default function Payments() {
                   </label>
                 </div>
 
-              <div className="mt-6 sm:mt-8 md:mt-10 flex justify-center">
-                <div className="bg-[#A4B494] hover:bg-[#8DA087] px-2 py-3 w-[180px] transition-all duration-300 rounded-md shadow-lg shadow-black/40 flex items-center justify-center">                  
-                  <a
-                    href="/payment-success"
-                    className="text-sm font-semibold w-full sm:w-auto text-center"
-                  >
-                    Proceed To Pay
-                  </a>
+                <div className="mt-6 sm:mt-8 md:mt-10 flex justify-center">
+                  <div className="bg-[#A4B494] hover:bg-[#8DA087] px-2 py-3 w-[180px] transition-all duration-300 rounded-md shadow-lg shadow-black/40 flex items-center justify-center">                  
+                    <a
+                      href="/payment-success"
+                      className="text-sm font-semibold w-full sm:w-auto text-center"
+                    >
+                      Proceed To Pay
+                    </a>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
         </div>
       </div>
     </div>
