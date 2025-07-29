@@ -77,7 +77,7 @@ export default function WardenLogin() {
 
           {/* Forgot Password */}
           <div className="w-3/4 flex justify-end mb-6 pt-2">
-            <a href="#" className="text-sm text-blue-600 hover:underline">
+            <a href="/ForgotPassword" className="text-sm text-blue-600 hover:underline">
               Forgot Password?
             </a>
           </div>
