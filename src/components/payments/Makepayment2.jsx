@@ -121,10 +121,11 @@ export default function Payments() {
                   </label>
                 </div>
 
-                <div className="mt-6 sm:mt-8 md:mt-10 flex justify-center">
+              <div className="mt-6 sm:mt-8 md:mt-10 flex justify-center">
+                <div className="bg-[#A4B494] hover:bg-[#8DA087] px-2 py-3 w-[180px] transition-all duration-300 rounded-md shadow-xl shadow-black/20 flex items-center justify-center">                  
                   <a
                     href="/payment-success"
-                    className="bg-[#A4B494] hover:bg-[#8DA087] transition-all duration-300 text-white font-semibold px-6 py-3 rounded-md shadow text-sm w-full sm:w-auto text-center"
+                    className="text-sm font-semibold w-full sm:w-auto text-center"
                   >
                     Proceed To Pay
                   </a>
@@ -132,6 +133,7 @@ export default function Payments() {
               </div>
             </div>
           </div>
+        </div>
         </div>
       </div>
     </div>

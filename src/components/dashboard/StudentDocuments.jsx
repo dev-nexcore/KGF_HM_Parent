@@ -11,7 +11,7 @@ export default function Documents() {
       {/* Profile & Basic Info */}
       <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
         {/* Profile Card */}
-        <div className="bg-[#d6dccc] w-full lg:w-1/3 p-4 sm:p-6 rounded-xl shadow-md flex flex-col items-center justify-center min-h-[200px] sm:min-h-[250px]">
+        <div className="bg-[#B8C5A8] w-full lg:w-1/3 p-4 sm:p-6 rounded-xl shadow-md flex flex-col items-center justify-center min-h-[200px] sm:min-h-[250px]">
           <div className="w-20 h-20 sm:w-24 sm:h-24 lg:w-28 lg:h-28 bg-white rounded-full mb-3 sm:mb-4" />
           <h3 className="text-base sm:text-lg font-bold text-center">Nouman Khan</h3>
           <p className="text-xs sm:text-sm text-center">ID: HFL-001</p>
@@ -19,7 +19,7 @@ export default function Documents() {
 
         {/* Basic Info Card */}
         <div className="bg-white w-full lg:w-2/3 rounded-xl shadow-md overflow-hidden">
-          <div className="bg-[#9CAD8F] px-4 py-2 sm:py-3 font-bold text-white text-sm sm:text-base">
+          <div className="bg-[#9CAD8F] px-4 py-2 sm:py-3 font-bold text-black text-sm sm:text-base">
             Basic Information
           </div>
           <div className="p-3 sm:p-4 text-xs sm:text-sm">
@@ -55,7 +55,7 @@ export default function Documents() {
       </div>
 
       {/* Uploaded Documents */}
-      <div className="bg-white p-3 sm:p-4 rounded-2xl shadow-2xl">
+<div className="bg-white p-3 sm:p-4 rounded-2xl shadow-[0_-8px_16px_-4px_rgba(0,0,0,0.1)]">
         <h3 className="font-bold mb-3 sm:mb-4 text-sm sm:text-base">Uploaded Documents</h3>
         
         {/* Desktop/Tablet Table View */}

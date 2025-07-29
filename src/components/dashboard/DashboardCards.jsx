@@ -15,29 +15,30 @@ export default function DashboardCards() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 lg:gap-6">
           
           {/* Student Card - Desktop size preserved, mobile responsive */}
-          <div className="bg-[#B8C5A8] rounded-xl p-4 sm:p-6 shadow-lg w-full mx-auto max-w-sm lg:ml-20 lg:h-[320px] lg:w-[340px] lg:max-w-none flex flex-col justify-center items-center min-h-[280px] sm:min-h-[300px]">
-            {/* Avatar Section */}
-            <div className="flex flex-col items-center justify-center text-center lg:flex-1">
-              <div className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 rounded-full bg-white mb-3 sm:mb-4 lg:mb-6 flex items-center justify-center">
-                {/* Empty white circle */}
-              </div>
-              
-              {/* Student Info */}
-              <h2 className="font-bold text-lg sm:text-xl text-gray-800 mb-1 sm:mb-2">Nouman Khan</h2>
-              <p className="text-xs sm:text-sm text-gray-700 mb-4 sm:mb-6">Student ID: HFL-001</p>
-              
-              {/* View Details Button */}
-              <Link href="/dashboard/student">
-                <button className="bg-white text-gray-800 font-medium px-4 sm:px-6 py-2 rounded-lg text-xs sm:text-sm hover:bg-gray-100 transition-colors duration-200">
-                  View Details
-                </button>
-              </Link>
-            </div>
-          </div>
+<div className="bg-[#B8C5A8] rounded-xl p-4 sm:p-6 shadow-lg w-full mx-auto max-w-md lg:ml-10 lg:h-[320px] lg:w-[470px] lg:max-w-none flex flex-col justify-left items-center min-h-[280px] sm:min-h-[300px]">
+  {/* Avatar Section */}
+  <div className="flex flex-col items-center justify-center text-center lg:flex-1">
+    <div className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 rounded-full bg-white mb-3 sm:mb-4 lg:mb-6 flex items-center justify-center">
+      {/* Empty white circle */}
+    </div>
+    
+    {/* Student Info */}
+    <h2 className="font-bold text-lg sm:text-2xl text-gray-800 mb-1 sm:mb-2">Nouman Khan</h2>
+    <p className="text-xl sm:text-sm text-gray-700 font-semibold mb-4 sm:mb-6">Student ID: HFL-001</p>
+    
+    {/* View Details Button */}
+    <Link href="/dashboard/student">
+      <button className="bg-white text-gray-800 font-semibold px-4 sm:px-6 py-2 rounded-lg text-xs sm:text-sm hover:bg-gray-100 transition-colors duration-200">
+        View Details
+      </button>
+    </Link>
+  </div>
+</div>
+
 
           {/* Fees Card - Desktop unchanged, mobile responsive */}
-          <div className="bg-white rounded-xl shadow-lg w-full mx-auto max-w-sm lg:max-w-none lg:mr-15 lg:ml-0 lg:min-h-[280px] min-h-[280px] sm:min-h-[300px] flex flex-col">
-            <h3 className="bg-[#9CAD8F] rounded-t-xl px-3 sm:px-4 py-2 sm:py-3 font-bold text-white text-xs sm:text-sm lg:text-base">
+<div className="bg-white rounded-xl shadow-lg w-full mx-auto max-w-sm lg:max-w-none lg:mr-0 lg:-ml-10 lg:min-h-[280px] min-h-[280px] lg:w-[640px] sm:min-h-[300px] flex flex-col">
+            <h3 className="bg-[#9CAD8F] rounded-t-xl px-3 sm:px-4 py-2 sm:py-3 font-bold text-black text-xs sm:text-sm lg:text-base">
               Fees Overview
             </h3>
             <div className="p-3 sm:p-4 lg:p-6 space-y-2 sm:space-y-3 flex-1 flex flex-col justify-center">
@@ -50,7 +51,7 @@ export default function DashboardCards() {
 
           {/* Attendance Card - Desktop unchanged, mobile responsive */}
           <div className="bg-white rounded-xl shadow-lg w-full mx-auto max-w-sm lg:max-w-none lg:min-h-[280px] min-h-[280px] sm:min-h-[300px] flex flex-col">
-            <h3 className="bg-[#9CAD8F] rounded-t-xl px-3 sm:px-4 py-2 sm:py-3 font-bold text-white text-xs sm:text-sm lg:text-base">
+            <h3 className="bg-[#9CAD8F] rounded-t-xl px-3 sm:px-4 py-2 sm:py-3 font-bold text-black text-xs sm:text-sm lg:text-base">
               Attendance Summary
             </h3>
             <div className="p-3 sm:p-4 lg:p-6 space-y-2 sm:space-y-3 flex-1 flex flex-col justify-center">
@@ -63,7 +64,7 @@ export default function DashboardCards() {
 
           {/* Hostel Card - Desktop unchanged, mobile responsive */}
           <div className="bg-white rounded-xl shadow-lg w-full mx-auto max-w-sm lg:max-w-none lg:min-h-[280px] min-h-[280px] sm:min-h-[300px] flex flex-col">
-            <h3 className="bg-[#9CAD8F] rounded-t-xl px-3 sm:px-4 py-2 sm:py-3 font-bold text-white text-xs sm:text-sm lg:text-base">
+            <h3 className="bg-[#9CAD8F] rounded-t-xl px-3 sm:px-4 py-2 sm:py-3 font-bold text-black text-xs sm:text-sm lg:text-base">
               Hostel Details
             </h3>
             <div className="p-3 sm:p-4 lg:p-6 space-y-2 sm:space-y-3 flex-1 flex flex-col justify-center">
