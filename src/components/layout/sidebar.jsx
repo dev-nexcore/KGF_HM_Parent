@@ -74,7 +74,6 @@ export default function Sidebar() {
                 { href: "/Fees", icon: "/wallet.png", label: "Fees Paid" },
                 { href: "/Notices", icon: "/notice.png", label: "Notices" },
                 { href: "/Makepayment", icon: "/payment.png", label: "Make Payments" },
-                
               ].map(({ href, icon, label }) => {
                 const active = isActive(href);
                 return (
