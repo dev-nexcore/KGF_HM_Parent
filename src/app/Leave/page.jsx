@@ -1,6 +1,6 @@
 'use client';
 import Navbar from "@/components/layout/navbar";
-import Sidebar from "@/components/layout/Sidebar";
+import Sidebar from "@/components/layout/sidebar";
 import LeaveManagementTable from "@/components/LeaveManagement/Leave";
 
 export default function LeavePage() {

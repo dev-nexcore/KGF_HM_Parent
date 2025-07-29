@@ -1,7 +1,7 @@
 'use client'
 import Navbar from '@/components/layout/navbar'
 import StudentDocuments from '@/components/dashboard/StudentDocuments'
-import Sidebar from '@/components/layout/Sidebar'
+import Sidebar from '@/components/layout/sidebar'
 
 export default function StudentPage() {
   return (

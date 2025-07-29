@@ -12,7 +12,6 @@ export default function Documents() {
     contactNumber: '',
     roomNo: '',
     bedAllotment: '',
-    roommateName: '',
     lastCheckInDate: '',
     loading: true,
     error: null
@@ -74,7 +73,6 @@ export default function Documents() {
           contactNumber: student.contactNumber || 'N/A',
           roomNo: student.roomNo || 'N/A',
           bedAllotment: student.bedAllotment || 'N/A',
-          roommateName: student.roommateName || 'No roommate',
           lastCheckInDate: formatDate(student.lastCheckInDate),
           loading: false,
           error: null
@@ -178,8 +176,7 @@ export default function Documents() {
                 <p className="font-bold mb-2 sm:mb-0">{studentData.bedAllotment}</p>
               </div>
               <div className="flex flex-col sm:contents">
-                <p className="text-gray-500">Roommate:</p>
-                <p className="font-bold mb-2 sm:mb-0">{studentData.roommateName}</p>
+
               </div>
               <div className="flex flex-col sm:contents">
                 <p className="text-gray-500">Last Check-in:</p>
