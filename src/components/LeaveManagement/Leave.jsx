@@ -3,7 +3,7 @@ import React from "react";
 const leaveData = [
   { type: "Sick Leave", from: "02-05-2025", to: "02-05-2025", reason: "Fever", status: "APPROVED" },
   { type: "Casual Leave", from: "03-05-2025", to: "03-05-2025", reason: "Family Event", status: "APPROVED" },
-  { type: "Emergency Leave", from: "04-05-2025", to: "04-05-2025", reason: "Circumstances", status: "APPROVED" },
+  { type: "Medical Leave", from: "04-05-2025", to: "04-05-2025", reason: "Circumstances", status: "APPROVED" },
   { type: "Casual Leave", from: "05-05-2025", to: "05-05-2025", reason: "Personal Work", status: "REJECTED" },
   { type: "Sick Leave", from: "06-05-2025", to: "06-05-2025", reason: "Fever", status: "APPROVED" },
   { type: "Casual Leave", from: "07-05-2025", to: "07-05-2025", reason: "Family Event", status: "PENDING" },

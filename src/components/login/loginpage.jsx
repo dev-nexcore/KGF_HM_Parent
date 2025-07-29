@@ -64,7 +64,7 @@ export default function ParentLogin() {
           />
 
           {/* Password */}
-          <label className="text-md font-semibold text-black mb-1 w-3/4 text-left">
+          <label className="text-md font-semibold text-black mb-1 w-3/4 text-left pt-3">
             Password
           </label>
           <input
@@ -76,7 +76,7 @@ export default function ParentLogin() {
           />
 
           {/* Forgot Password */}
-          <div className="w-3/4 flex justify-end mb-6">
+          <div className="w-3/4 flex justify-end mb-6 pt-2">
             <a href="#" className="text-sm text-blue-600 hover:underline">
               Forgot Password?
             </a>
