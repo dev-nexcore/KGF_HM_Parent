@@ -1,10 +1,10 @@
 'use client';
-
+import Link from 'next/link';
 import React from 'react';
 
 const fees = [
   {
-    type: "Tuition Fee", // Fixed spelling
+    type: "Tuition Fee",
     dueDate: "02-05-2025",
     amount: "₹ 30,000",
     status: "Pending",
@@ -23,7 +23,7 @@ const fees = [
   },
 ];
 
-export default function MakePaymentsPage() {
+export default function MakePaymentsPage({ onPayNowClick }) { // Added onPayNowClick prop
   return (
     <div className="min-h-screen bg-white text-sm font-medium px-4 md:px-8 lg:px-12 py-0">
       <div className="max-w-7xl mx-auto w-full">
@@ -80,11 +80,12 @@ export default function MakePaymentsPage() {
                       </span>
                     </td>
                     <td className="py-2 px-1 sm:py-3 sm:px-2 lg:py-4 lg:px-6 text-center">
-                      <a href="/payment">
-                        <button className="bg-[#33cc33] hover:bg-[#28a428] text-white font-semibold px-2 py-1 sm:px-3 sm:py-1 rounded-md text-[10px] sm:text-xs lg:text-sm shadow">
-                          Pay Now
-                        </button>
-                      </a>
+                      <button 
+                        onClick={onPayNowClick} // Use the prop instead of Link
+                        className="bg-[#33cc33] hover:bg-[#28a428] text-white font-semibold px-2 py-1 sm:px-3 sm:py-1 rounded-md text-[10px] sm:text-xs lg:text-sm shadow"
+                      >
+                        Pay Now
+                      </button>
                     </td>
                   </tr>
                 ))}

@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react';
 import Image from 'next/image';
-import { FaMobileAlt, FaUniversity, FaCreditCard } from 'react-icons/fa';
 
 export default function Payments() {
   const [paymentMethod, setPaymentMethod] = useState('UPI');
@@ -69,7 +68,7 @@ export default function Payments() {
                       className="w-4 h-4 sm:w-5 sm:h-5 accent-[#1109FF]"
                     />
                     <span className="flex items-center gap-2 text-sm sm:text-[15px] font-semibold">
-                      <FaMobileAlt className="text-sm sm:text-base" /> UPI
+                      < div className="text-sm sm:text-base" /> UPI
                     </span>
                   </label>
 
@@ -84,7 +83,7 @@ export default function Payments() {
                       className="w-4 h-4 sm:w-5 sm:h-5 accent-[#1109FF]"
                     />
                     <span className="flex items-center gap-2 text-sm sm:text-[15px] font-semibold">
-                      <FaUniversity className="text-sm sm:text-base" /> Net Banking
+                      <div className="text-sm sm:text-base" /> Net Banking
                     </span>
                   </label>
 
@@ -100,7 +99,7 @@ export default function Payments() {
                         className="w-4 h-4 sm:w-5 sm:h-5 accent-[#1109FF]"
                       />
                       <span className="flex items-center gap-2 text-sm sm:text-[15px] font-semibold">
-                        <FaCreditCard className="text-sm sm:text-base" /> Credit or Debit Card
+                        <div className="text-sm sm:text-base" /> Credit or Debit Card
                       </span>
                     </span>
 
