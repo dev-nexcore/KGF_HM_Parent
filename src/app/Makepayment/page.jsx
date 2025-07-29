@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Navbar from '@/components/layout/navbar';
-import Sidebar from '@/components/layout/Sidebar';
+import Sidebar from '@/components/layout/sidebar';
 import MakePaymentsPage from '@/components/Makepayments/Makepayments';
 import Payments from '@/components/Makepayments/Makepayment2';
 

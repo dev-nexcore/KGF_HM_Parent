@@ -1,25 +1,253 @@
-import React from "react";
-
-// Attendance data
-const attendanceData = [
-  { date: "02-05-2025", in: "08:30 AM", out: "03:30 PM", status: "Present" },
-  { date: "03-05-2025", in: "08:30 AM", out: "03:30 PM", status: "Present" },
-  { date: "04-05-2025", in: "08:30 AM", out: "03:30 PM", status: "Present" },
-  { date: "05-05-2025", in: "-",      out: "-",      status: "Absent"  },
-  { date: "06-05-2025", in: "08:30 AM", out: "03:30 PM", status: "Present" },
-  { date: "07-05-2025", in: "12:30 AM", out: "05:30 PM", status: "Late"    },
-  { date: "08-05-2025", in: "08:30 AM", out: "03:30 PM", status: "Present" },
-  { date: "09-05-2025", in: "-",      out: "-",      status: "Absent"  },
-  { date: "10-05-2025", in: "08:30 AM", out: "03:30 PM", status: "Present" },
-];
+import React, { useState, useEffect } from "react";
+import axios from "axios";
 
 const statusColors = {
-  Present:  "bg-green-500 text-white",
-  Absent:   "bg-red-500   text-white",
-  Late:     "bg-orange-400 text-white",
+  Present: "bg-green-500 text-white",
+  Absent: "bg-red-500 text-white",
+  Late: "bg-orange-400 text-white",
 };
 
 export default function AttendancePage() {
+  const [attendanceData, setAttendanceData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchAttendanceData = async () => {
+      try {
+        setLoading(true);
+        
+        // Get student ID from parent token
+        const parentToken = localStorage.getItem('parentToken');
+        if (!parentToken) {
+          throw new Error('Parent token not found');
+        }
+
+        const tokenPayload = JSON.parse(atob(parentToken.split('.')[1]));
+        const studentId = tokenPayload.studentId;
+        if (!studentId) {
+          throw new Error('Student ID not found in token');
+        }
+
+        // Fetch attendance log using axios
+        const response = await axios.get(
+          `http://localhost:5000/api/studentauth/attendance-log/${studentId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${parentToken}`,
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+
+        const attendanceLog = response.data.attendanceLog;
+        
+        // Process and format the attendance data
+        const formattedData = processAttendanceData(attendanceLog);
+        setAttendanceData(formattedData);
+
+      } catch (error) {
+        console.error('Error fetching attendance data:', error);
+        let errorMessage = 'Failed to load attendance data';
+        
+        if (error.response) {
+          // Server responded with error status
+          errorMessage = `Server error: ${error.response.status} - ${error.response.statusText}`;
+        } else if (error.request) {
+          // Request was made but no response received
+          errorMessage = 'Network error - unable to reach server';
+        } else {
+          // Something else happened
+          errorMessage = error.message;
+        }
+        setError(errorMessage);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAttendanceData();
+  }, []);
+
+  // Function to process raw attendance data into display format
+  const processAttendanceData = (attendanceLog) => {
+    const processedData = [];
+    
+    // Sort by date (newest first for display, but we'll also need oldest first for absence calculation)
+    const sortedLogNewest = attendanceLog.sort((a, b) => new Date(b.checkInDate) - new Date(a.checkInDate));
+    const sortedLogOldest = [...attendanceLog].sort((a, b) => new Date(a.checkInDate) - new Date(b.checkInDate));
+    
+    // Create a map of dates that have check-ins for quick lookup
+    const checkInDates = new Set();
+    sortedLogOldest.forEach(entry => {
+      const checkInDate = new Date(entry.checkInDate);
+      const dateKey = checkInDate.toDateString();
+      checkInDates.add(dateKey);
+    });
+    
+    // Find absent days by checking gaps between checkout and next checkin
+    const absentDays = [];
+    sortedLogOldest.forEach((entry, index) => {
+      if (entry.checkOutDate) {
+        const checkOutDate = new Date(entry.checkOutDate);
+        const nextDayDate = new Date(checkOutDate);
+        nextDayDate.setDate(nextDayDate.getDate() + 1);
+        
+        // Check if there's a check-in on the next day
+        const nextDayKey = nextDayDate.toDateString();
+        if (!checkInDates.has(nextDayKey)) {
+          // Student was absent the next day
+          absentDays.push({
+            date: nextDayDate.toLocaleDateString('en-GB', {
+              day: '2-digit',
+              month: '2-digit',
+              year: 'numeric',
+              timeZone: 'Asia/Kolkata'
+            }),
+            in: '-',
+            out: '-',
+            status: 'Absent'
+          });
+        }
+      }
+    });
+    
+    // Process actual attendance entries
+    sortedLogNewest.forEach((entry) => {
+      const checkInDate = new Date(entry.checkInDate);
+      const checkOutDate = entry.checkOutDate ? new Date(entry.checkOutDate) : null;
+      
+      // Format date
+      const dateStr = checkInDate.toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        timeZone: 'Asia/Kolkata'
+      });
+      
+      // Format check-in time
+      const checkInTime = checkInDate.toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true,
+        timeZone: 'Asia/Kolkata'
+      });
+      
+      // Format check-out time
+      const checkOutTime = checkOutDate 
+        ? checkOutDate.toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true,
+            timeZone: 'Asia/Kolkata'
+          })
+        : '-';
+      
+      // Determine status
+      let status = 'Present';
+      if (!checkOutDate) {
+        // No checkout means they're still in or didn't complete the day properly
+        status = 'Present'; // Changed logic - no checkout doesn't mean absent
+      } else {
+        // Check if late (assuming 9:00 AM is standard time)
+        const standardTime = new Date(checkInDate);
+        standardTime.setHours(9, 0, 0, 0);
+        
+        if (checkInDate > standardTime) {
+          status = 'Late';
+        }
+      }
+      
+      processedData.push({
+        date: dateStr,
+        in: checkInTime,
+        out: checkOutTime,
+        status: status
+      });
+    });
+    
+    // Add absent days to the processed data and sort again
+    const allData = [...processedData, ...absentDays];
+    
+    // Sort all data by date (newest first)
+    allData.sort((a, b) => {
+      const dateA = new Date(a.date.split('/').reverse().join('/'));
+      const dateB = new Date(b.date.split('/').reverse().join('/'));
+      return dateB - dateA;
+    });
+    
+    return allData;
+  };
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-white py-2 sm:py-3 px-3 sm:px-4 lg:px-6 xl:px-8">
+        <div className="flex items-center w-full mb-3 sm:mb-4">
+          <span className="h-6 w-1 bg-red-600 rounded mr-3" />
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-800">
+            Attendance History
+          </h2>
+        </div>
+        
+        <div className="w-full bg-white rounded-2xl shadow-inner border border-gray-100 p-8 flex items-center justify-center min-h-[400px]">
+          <div className="flex flex-col items-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+            <p className="text-gray-600">Loading attendance data...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="min-h-screen bg-white py-2 sm:py-3 px-3 sm:px-4 lg:px-6 xl:px-8">
+        <div className="flex items-center w-full mb-3 sm:mb-4">
+          <span className="h-6 w-1 bg-red-600 rounded mr-3" />
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-800">
+            Attendance History
+          </h2>
+        </div>
+        
+        <div className="w-full bg-white rounded-2xl shadow-inner border border-gray-100 p-8 flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <div className="text-red-600 text-lg font-semibold mb-2">Error Loading Data</div>
+            <p className="text-gray-600">{error}</p>
+            <button 
+              onClick={() => window.location.reload()} 
+              className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // No data state
+  if (attendanceData.length === 0) {
+    return (
+      <div className="min-h-screen bg-white py-2 sm:py-3 px-3 sm:px-4 lg:px-6 xl:px-8">
+        <div className="flex items-center w-full mb-3 sm:mb-4">
+          <span className="h-6 w-1 bg-red-600 rounded mr-3" />
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-800">
+            Attendance History
+          </h2>
+        </div>
+        
+        <div className="w-full bg-white rounded-2xl shadow-inner border border-gray-100 p-8 flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <div className="text-gray-600 text-lg font-semibold mb-2">No Attendance Records Found</div>
+            <p className="text-gray-500">No attendance data available for this student.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-white py-2 sm:py-3 px-3 sm:px-4 lg:px-6 xl:px-8">
       {/* Header - Outside the main container */}
@@ -28,6 +256,28 @@ export default function AttendancePage() {
         <h2 className="text-xl sm:text-2xl font-bold text-gray-800">
           Attendance History
         </h2>
+      </div>
+
+      {/* Summary Statistics */}
+      <div className="mb-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+          <div className="text-green-800 font-semibold">Present Days</div>
+          <div className="text-2xl font-bold text-green-600">
+            {attendanceData.filter(entry => entry.status === 'Present').length}
+          </div>
+        </div>
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="text-red-800 font-semibold">Absent Days</div>
+          <div className="text-2xl font-bold text-red-600">
+            {attendanceData.filter(entry => entry.status === 'Absent').length}
+          </div>
+        </div>
+        <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+          <div className="text-orange-800 font-semibold">Late Days</div>
+          <div className="text-2xl font-bold text-orange-600">
+            {attendanceData.filter(entry => entry.status === 'Late').length}
+          </div>
+        </div>
       </div>
 
       {/* Main White Container with dynamic height */}

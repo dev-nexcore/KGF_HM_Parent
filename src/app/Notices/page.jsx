@@ -1,5 +1,5 @@
 import Navbar from '@/components/layout/navbar';
-import Sidebar from '@/components/layout/Sidebar';
+import Sidebar from '@/components/layout/sidebar';
 import Notices from '@/components/Notices/Notices';
 
 export default function Home() {
