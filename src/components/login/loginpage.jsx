@@ -5,27 +5,27 @@ import { useState } from "react";
 import axios from "axios";
 import { useRouter } from "next/navigation";
 
-export default function WardenLogin() {
-  const [wardenId, setWardenId] = useState("");
+export default function ParentLogin() {
+  const [studentId, setStudentId] = useState("");
   const [password, setPassword] = useState("");
   const router = useRouter();
 
   const handleLogin = async () => {
     try {
-      const response = await axios.post("http://localhost:5000/api/wardenauth/login", {
-        wardenId,
+      const response = await axios.post("http://localhost:5000/api/parentauth/login", {
+        studentId,
         password,
       });
 
-      const { token, warden } = response.data;
+      const { token, parent } = response.data;
 
-      localStorage.setItem("wardenToken", token);
-      localStorage.setItem("wardenInfo", JSON.stringify(warden));
+      localStorage.setItem("parentToken", token);
+      localStorage.setItem("parentInfo", JSON.stringify(parent));
 
       alert("Login successful!");
 
       setTimeout(() => {
-        router.push("/warden-dashboard");
+        router.push("/dashboard");
       }, 1000);
     } catch (error) {
       console.error("Login Error:", error);
@@ -59,8 +59,8 @@ export default function WardenLogin() {
             type="text"
             placeholder="Enter Your User ID"
             className="w-3/4 mb-4 px-4 py-3 rounded-[1rem] border border-gray-300 shadow-md focus:outline-none"
-            value={wardenId}
-            onChange={(e) => setWardenId(e.target.value)}
+            value={studentId}
+            onChange={(e) => setStudentId(e.target.value)}
           />
 
           {/* Password */}

@@ -1,7 +1,101 @@
 'use client';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import axios from 'axios';
 
 export default function DashboardCards() {
+  const [studentData, setStudentData] = useState({
+    firstName: '',
+    lastName: '',
+    studentId: '',
+    loading: true,
+    error: null
+  });
+
+  useEffect(() => {
+    const fetchStudentData = async () => {
+      try {
+        // Get token from localStorage or wherever it's stored
+        const parentToken = localStorage.getItem('parentToken'); // Adjust based on where you store the token
+        
+        if (!parentToken) {
+          throw new Error('Parent token not found');
+        }
+
+        // Decode the JWT token to get studentId
+        const tokenPayload = JSON.parse(atob(parentToken.split('.')[1]));
+        const studentId = tokenPayload.studentId;
+
+        if (!studentId) {
+          throw new Error('Student ID not found in token');
+        }
+
+        // Fetch student data from your API using axios
+        const response = await axios.get(`http://localhost:5000/api/studentauth/profile/${studentId}`, {
+          headers: {
+            'Authorization': `Bearer ${parentToken}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        const student = response.data;
+
+        // Debug: Log the response to see the actual structure
+        console.log('API Response:', student);
+
+        // Try different possible field names for the student name
+        const studentName = student.studentName || student.name || student.firstName + ' ' + student.lastName || '';
+        
+        // Parse firstName and lastName from studentName
+        const nameParts = studentName ? studentName.split(' ') : ['', ''];
+        const firstName = nameParts[0] || student.firstName || '';
+        const lastName = nameParts.slice(1).join(' ') || student.lastName || '';
+
+        console.log('Parsed name parts:', { firstName, lastName, studentName });
+
+        setStudentData({
+          firstName,
+          lastName,
+          studentId: student.studentId || studentId,
+          loading: false,
+          error: null
+        });
+
+      } catch (error) {
+        console.error('Error fetching student data:', error);
+        
+        // Handle axios-specific errors
+        let errorMessage = 'Unknown error occurred';
+        if (error.response) {
+          // Server responded with error status
+          errorMessage = error.response.data?.message || `Server error: ${error.response.status}`;
+        } else if (error.request) {
+          // Network error
+          errorMessage = 'Network error - unable to reach server';
+        } else {
+          // Other error
+          errorMessage = error.message;
+        }
+        
+        setStudentData(prev => ({
+          ...prev,
+          loading: false,
+          error: errorMessage
+        }));
+      }
+    };
+
+    fetchStudentData();
+  }, []);
+
+  const displayName = studentData.loading 
+    ? 'Loading...' 
+    : studentData.error 
+      ? 'Error loading data'
+      : `${studentData.firstName} ${studentData.lastName}`.trim() || 'Unknown Student';
+
+  const displayStudentId = studentData.studentId || 'N/A';
+
   return (
     <div className="space-y-6 p-2 sm:p-4 lg:p-6">
       {/* Dashboard Header */}
@@ -23,12 +117,19 @@ export default function DashboardCards() {
               </div>
               
               {/* Student Info */}
-              <h2 className="font-bold text-lg sm:text-xl text-gray-800 mb-1 sm:mb-2">Nouman Khan</h2>
-              <p className="text-xs sm:text-sm text-gray-700 mb-4 sm:mb-6">Student ID: HFL-001</p>
+              <h2 className="font-bold text-lg sm:text-xl text-gray-800 mb-1 sm:mb-2">
+                {displayName}
+              </h2>
+              <p className="text-xs sm:text-sm text-gray-700 mb-4 sm:mb-6">
+                Student ID: {displayStudentId}
+              </p>
               
               {/* View Details Button */}
               <Link href="/dashboard/student">
-                <button className="bg-white text-gray-800 font-medium px-4 sm:px-6 py-2 rounded-lg text-xs sm:text-sm hover:bg-gray-100 transition-colors duration-200">
+                <button 
+                  className="bg-white text-gray-800 font-medium px-4 sm:px-6 py-2 rounded-lg text-xs sm:text-sm hover:bg-gray-100 transition-colors duration-200 disabled:opacity-50"
+                  disabled={studentData.loading}
+                >
                   View Details
                 </button>
               </Link>
