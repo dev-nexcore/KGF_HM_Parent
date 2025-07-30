@@ -1,4 +1,5 @@
 'use client';
+import Link from 'next/link';
 
 export default function ForgotPassword() {
   return (
@@ -19,19 +20,19 @@ export default function ForgotPassword() {
             />
           </div>
 
-          <div className="text-center">
-            <button
-              type="submit"
-              className="bg-[#b8bfa5] text-black font-semibold px-15 py-1.5 rounded-lg shadow-md hover:opacity-90 transition-all duration-200"
-            >
-              Send OTP
-            </button>
-          </div>
+      <div className="text-center">
+  <Link
+    href="/resetpassword"
+    className="inline-block bg-[#b8bfa5] text-black font-semibold px-15 py-1.5 rounded-lg shadow-md hover:opacity-90 transition-all duration-200"
+  >
+    Send OTP
+  </Link>
+</div>
         </form>
 
-        <div className="text-center mt-6">
-          <p className="text-sm text-gray-700 hover:underline cursor-pointer">Back To Login</p>
-        </div>
+        {/* <div className="text-center mt-6">
+          <a href="/" className="text-sm text-gray-700 hover:underline cursor-pointer">Back To Login</a>
+        </div> */}
       </div>
     </div>
   );

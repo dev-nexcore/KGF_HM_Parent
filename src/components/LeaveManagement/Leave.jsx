@@ -103,13 +103,12 @@ export default function LeaveManagementTable() {
   // Loading state
   if (loading) {
     return (
-      <div className="min-h-screen bg-white py-2 sm:py-3 px-3 sm:px-4 lg:px-6 xl:px-8">
-        <div className="flex items-center w-full mb-3 sm:mb-4">
-          <span className="h-6 w-1 bg-red-600 rounded mr-3" />
-          <h2 className="text-xl sm:text-2xl font-bold text-gray-800">
-            Leave Management
-          </h2>
-        </div>
+      <div className="space-y-6 p-2 sm:p-4 lg:p-6">
+      {/* Header - Outside the main container */}
+      <div className="flex items-center ml-2 mb-4 sm:mb-6">
+  <div className="w-1 h-6 sm:h-7 bg-red-500 mr-2 sm:mr-3"></div>
+  <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold">Leave Management</h2>
+</div>
         
         <div className="w-full bg-white rounded-2xl shadow-inner border border-gray-100 p-8 flex items-center justify-center min-h-[400px]">
           <div className="flex flex-col items-center">
@@ -124,13 +123,12 @@ export default function LeaveManagementTable() {
   // Error state
   if (error) {
     return (
-      <div className="min-h-screen bg-white py-2 sm:py-3 px-3 sm:px-4 lg:px-6 xl:px-8">
-        <div className="flex items-center w-full mb-3 sm:mb-4">
-          <span className="h-6 w-1 bg-red-600 rounded mr-3" />
-          <h2 className="text-xl sm:text-2xl font-bold text-gray-800">
-            Leave Management
-          </h2>
-        </div>
+      <div className="space-y-6 p-2 sm:p-4 lg:p-6">
+      {/* Header - Outside the main container */}
+      <div className="flex items-center ml-2 mb-4 sm:mb-6">
+  <div className="w-1 h-6 sm:h-7 bg-red-500 mr-2 sm:mr-3"></div>
+  <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold">Leave Management</h2>
+</div>
         
         <div className="w-full bg-white rounded-2xl shadow-inner border border-gray-100 p-8 flex items-center justify-center min-h-[400px]">
           <div className="text-center">
@@ -151,13 +149,12 @@ export default function LeaveManagementTable() {
   // No data state
   if (leaveData.length === 0) {
     return (
-      <div className="min-h-screen bg-white py-2 sm:py-3 px-3 sm:px-4 lg:px-6 xl:px-8">
-        <div className="flex items-center w-full mb-3 sm:mb-4">
-          <span className="h-6 w-1 bg-red-600 rounded mr-3" />
-          <h2 className="text-xl sm:text-2xl font-bold text-gray-800">
-            Leave Management
-          </h2>
-        </div>
+     <div className="space-y-6 p-2 sm:p-4 lg:p-6">
+      {/* Header - Outside the main container */}
+      <div className="flex items-center ml-2 mb-4 sm:mb-6">
+  <div className="w-1 h-6 sm:h-7 bg-red-500 mr-2 sm:mr-3"></div>
+  <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold">Leave Management</h2>
+</div>
         
         <div className="w-full bg-white rounded-2xl shadow-inner border border-gray-100 p-8 flex items-center justify-center min-h-[400px]">
           <div className="text-center">
@@ -170,14 +167,12 @@ export default function LeaveManagementTable() {
   }
 
   return (
-    <div className="min-h-screen bg-white py-2 sm:py-3 px-3 sm:px-4 lg:px-6 xl:px-8">
+   <div className="space-y-6 p-2 sm:p-4 lg:p-6">
       {/* Header - Outside the main container */}
-      <div className="flex items-center w-full mb-3 sm:mb-4">
-        <span className="h-6 w-1 bg-red-600 rounded mr-3" />
-        <h2 className="text-xl sm:text-2xl font-bold text-gray-800">
-          Leave Management
-        </h2>
-      </div>
+      <div className="flex items-center ml-2 mb-4 sm:mb-6">
+  <div className="w-1 h-6 sm:h-7 bg-red-500 mr-2 sm:mr-3"></div>
+  <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold">Leave Management</h2>
+</div>
 
       {/* Summary Statistics */}
       <div className="mb-6 grid grid-cols-1 sm:grid-cols-3 gap-4">

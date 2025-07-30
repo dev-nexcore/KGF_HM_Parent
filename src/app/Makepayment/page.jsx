@@ -10,9 +10,9 @@ export default function Home() {
   const [showPaymentForm, setShowPaymentForm] = useState(false);
 
   return (
-    <div className='min-h-screen flex flex-col md:flex-row '>
+    <div className='flex'>
       <Sidebar />
-      <div className='flex-1 flex flex-col'>
+      <div className='flex-1 min-h-screen'>
         <Navbar/>
         {!showPaymentForm ? (
           <MakePaymentsPage onPayNowClick={() => setShowPaymentForm(true)} />

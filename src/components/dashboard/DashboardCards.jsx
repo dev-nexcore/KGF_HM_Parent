@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { User } from 'lucide-react';
 import axios from 'axios';
 
 export default function DashboardCards() {
@@ -10,6 +11,7 @@ export default function DashboardCards() {
     studentId: '',
     roomNo: '',
     bedAllotment: '',
+    profileImage: null,
     loading: true,
     error: null
   });
@@ -54,8 +56,9 @@ export default function DashboardCards() {
           lastName,
           studentId: student.studentId || studentId,
           roomNo: student.roomNo || 'N/A',
-           bedAllotment: student.bedAllotment || 'N/A',
-           wardernName: student.wardernName || 'N/A',
+          bedAllotment: student.bedAllotment || 'N/A',
+          wardernName: student.wardernName || 'N/A',
+          profileImage: student.profileImage ? `http://localhost:5000/${student.profileImage}` : null,
           loading: false,
           error: null
         });
@@ -189,13 +192,26 @@ export default function DashboardCards() {
         <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold">Dashboard</h2>
       </div>
 
-      <div className="w-full lg:max-w-7xl lg:mx-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 lg:gap-6">
+      {/* Fixed container with proper spacing */}
+      <div className="w-full max-w-[1400px] mx-auto px-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 xl:gap-12">
 
-          {/* Student Card */}
-          <div className="bg-[#B8C5A8] rounded-xl p-4 sm:p-6 shadow-lg w-full mx-auto max-w-md lg:ml-10 lg:h-[320px] lg:w-[470px] lg:max-w-none flex flex-col justify-left items-center min-h-[280px] sm:min-h-[300px]">
-            <div className="flex flex-col items-center justify-center text-center lg:flex-1">
-              <div className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 rounded-full bg-white mb-3 sm:mb-4 lg:mb-6 flex items-center justify-center"></div>
+          {/* Student Card with Profile Photo */}
+          <div className="bg-[#B8C5A8] rounded-xl p-4 sm:p-6 shadow-lg w-full max-w-md mx-auto lg:max-w-none lg:h-[320px] flex flex-col justify-center items-center min-h-[280px] sm:min-h-[300px]">
+            <div className="flex flex-col items-center justify-center text-center">
+              {/* Profile Photo Container - View Only */}
+              <div className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 rounded-full bg-white mb-3 sm:mb-4 lg:mb-6 flex items-center justify-center relative overflow-hidden">
+                {studentData.profileImage ? (
+                  <img 
+                    src={studentData.profileImage} 
+                    alt="Student Profile" 
+                    className="w-full h-full object-cover rounded-full"
+                  />
+                ) : (
+                  <User className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 text-gray-600" />
+                )}
+              </div>
+              
               <h2 className="font-bold text-lg sm:text-2xl text-gray-800 mb-1 sm:mb-2">{displayName}</h2>
               <p className="text-xl sm:text-sm text-gray-700 font-semibold mb-4 sm:mb-6">Student ID: {displayStudentId}</p>
               <Link href="/dashboard/student">
@@ -206,8 +222,8 @@ export default function DashboardCards() {
             </div>
           </div>
 
-          {/* Fees Card */}
-          <div className="bg-white rounded-xl shadow-lg w-full mx-auto max-w-sm lg:max-w-none lg:mr-0 lg:-ml-10 lg:min-h-[280px] min-h-[280px] lg:w-[640px] sm:min-h-[300px] flex flex-col">
+          {/* Fees Card - Removed conflicting positioning */}
+          <div className="bg-white rounded-xl shadow-lg w-full max-w-md mx-auto lg:max-w-none lg:min-h-[280px] min-h-[280px] sm:min-h-[300px] flex flex-col">
             <h3 className="bg-[#9CAD8F] rounded-t-xl px-3 sm:px-4 py-2 sm:py-3 font-bold text-black text-xs sm:text-sm lg:text-base">Fees Overview</h3>
             <div className="p-3 sm:p-4 lg:p-6 space-y-2 sm:space-y-3 flex-1 flex flex-col justify-center">
               <InfoRow label="Total Fees:" value="₹50,000" />
@@ -217,8 +233,8 @@ export default function DashboardCards() {
             </div>
           </div>
 
-          {/* Attendance Card - DYNAMIC */}
-          <div className="bg-white rounded-xl shadow-lg w-full mx-auto max-w-sm lg:max-w-none lg:min-h-[280px] min-h-[280px] sm:min-h-[300px] flex flex-col">
+          {/* Attendance Card */}
+          <div className="bg-white rounded-xl shadow-lg w-full max-w-md mx-auto lg:max-w-none lg:min-h-[280px] min-h-[280px] sm:min-h-[300px] flex flex-col">
             <h3 className="bg-[#9CAD8F] rounded-t-xl px-3 sm:px-4 py-2 sm:py-3 font-bold text-black text-xs sm:text-sm lg:text-base">Attendance Summary</h3>
             <div className="p-3 sm:p-4 lg:p-6 space-y-2 sm:space-y-3 flex-1 flex flex-col justify-center">
               <InfoRow label="Today:" value={attendance.today} color={attendance.today === "Present" ? "text-green-600" : "text-red-600"} />
@@ -228,7 +244,8 @@ export default function DashboardCards() {
             </div>
           </div>
 
-        <div className="bg-white rounded-xl shadow-lg w-full mx-auto max-w-sm lg:max-w-none lg:min-h-[280px] min-h-[280px] sm:min-h-[300px] flex flex-col">
+          {/* Hostel Details Card */}
+          <div className="bg-white rounded-xl shadow-lg w-full max-w-md mx-auto lg:max-w-none lg:min-h-[280px] min-h-[280px] sm:min-h-[300px] flex flex-col">
             <h3 className="bg-[#9CAD8F] rounded-t-xl px-3 sm:px-4 py-2 sm:py-3 font-bold text-black text-xs sm:text-sm lg:text-base">Hostel Details</h3>
             <div className="p-3 sm:p-4 lg:p-6 space-y-2 sm:space-y-3 flex-1 flex flex-col justify-center">
               <InfoRow label="Status:" value="Allocated" color="text-green-600" />

@@ -4,13 +4,12 @@ import Notices from '@/components/Notices/Notices';
 
 export default function Home() {
   return (
-    <div className='min-h-screen flex flex-col md:flex-row '>
-      <Sidebar/>
-      <div className='flex-1 flex flex-col'>
-        <Navbar/>
-      <Notices/>
-      </div>
-      
-    </div>
-  );
-}
+   <div className="flex">
+           <Sidebar />
+           <div className="flex-1 min-h-screen">
+             <Navbar />
+             <Notices />
+           </div>
+         </div>
+       )
+     }

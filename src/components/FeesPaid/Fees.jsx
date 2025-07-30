@@ -63,16 +63,14 @@ const statusColors = {
 
 export default function FeesSection() {
   return (
-    <div className="min-h-screen bg-white py-2 sm:py-3 px-3 sm:px-4 lg:px-6 xl:px-8">
+    <div className="space-y-6 p-2 sm:p-4 lg:p-6">
       
       {/* Fees Paid Section */}
       <div className="mb-6 sm:mb-8">
-        {/* Header - Outside the main container */}
-        <div className="flex items-center w-full mb-3 sm:mb-4">
-          <span className="h-6 w-1 bg-red-600 rounded mr-3" />
-          <h2 className="text-xl sm:text-2xl font-bold text-gray-800">
-            Fees Paid
-          </h2>
+        {/* Fixed header to match Dashboard styling */}
+        <div className="flex items-center ml-2 mb-4 sm:mb-6">
+          <div className="w-1 h-6 sm:h-7 bg-red-500 mr-2 sm:mr-3"></div>
+          <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold">Fees Paid</h2>
         </div>
 
         {/* Main White Container with dynamic height */}
@@ -184,12 +182,10 @@ export default function FeesSection() {
 
       {/* Transaction History Section */}
       <div>
-        {/* Header - Outside the main container */}
-        <div className="flex items-center w-full mb-3 sm:mb-4">
-          <span className="h-6 w-1 bg-red-600 rounded mr-3" />
-          <h2 className="text-xl sm:text-2xl font-bold text-gray-800">
-            Transaction History
-          </h2>
+        {/* Fixed header to match Dashboard styling */}
+        <div className="flex items-center ml-2 mb-4 sm:mb-6">
+          <div className="w-1 h-6 sm:h-7 bg-red-500 mr-2 sm:mr-3"></div>
+          <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold">Transaction History</h2>
         </div>
 
         {/* Main White Container with dynamic height */}

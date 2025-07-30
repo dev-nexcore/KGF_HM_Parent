@@ -166,6 +166,40 @@ export default function AttendancePage() {
       });
     });
     
+    // 🔥 NEW LOGIC: Add ongoing present days for students who haven't checked out
+    const lastEntry = sortedLogNewest[0]; // Most recent entry
+    if (lastEntry && !lastEntry.checkOutDate) {
+      // Student is still checked in, add present days from last check-in to today
+      const lastCheckIn = new Date(lastEntry.checkInDate);
+      const today = new Date();
+      
+      // Start from the day after last check-in
+      const currentDate = new Date(lastCheckIn);
+      currentDate.setDate(currentDate.getDate() + 1);
+      
+      while (currentDate <= today) {
+        const dateStr = currentDate.toLocaleDateString('en-GB', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+          timeZone: 'Asia/Kolkata'
+        });
+        
+        // Check if this date already exists in our data
+        const existingEntry = processedData.find(entry => entry.date === dateStr);
+        if (!existingEntry) {
+          processedData.push({
+            date: dateStr,
+            in: 'Continuous',
+            out: '-',
+            status: 'Present'
+          });
+        }
+        
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+    }
+    
     // Add absent days to the processed data and sort again
     const allData = [...processedData, ...absentDays];
     
@@ -182,12 +216,11 @@ export default function AttendancePage() {
   // Loading state
   if (loading) {
     return (
-      <div className="min-h-screen bg-white py-2 sm:py-3 px-3 sm:px-4 lg:px-6 xl:px-8">
-        <div className="flex items-center w-full mb-3 sm:mb-4">
-          <span className="h-6 w-1 bg-red-600 rounded mr-3" />
-          <h2 className="text-xl sm:text-2xl font-bold text-gray-800">
-            Attendance History
-          </h2>
+      <div className="space-y-6 p-2 sm:p-4 lg:p-6">
+        {/* Fixed header to match Dashboard styling */}
+        <div className="flex items-center ml-2 mb-4 sm:mb-6">
+          <div className="w-1 h-6 sm:h-7 bg-red-500 mr-2 sm:mr-3"></div>
+          <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold">Attendance History</h2>
         </div>
         
         <div className="w-full bg-white rounded-2xl shadow-inner border border-gray-100 p-8 flex items-center justify-center min-h-[400px]">
@@ -203,12 +236,11 @@ export default function AttendancePage() {
   // Error state
   if (error) {
     return (
-      <div className="min-h-screen bg-white py-2 sm:py-3 px-3 sm:px-4 lg:px-6 xl:px-8">
-        <div className="flex items-center w-full mb-3 sm:mb-4">
-          <span className="h-6 w-1 bg-red-600 rounded mr-3" />
-          <h2 className="text-xl sm:text-2xl font-bold text-gray-800">
-            Attendance History
-          </h2>
+      <div className="space-y-6 p-2 sm:p-4 lg:p-6">
+        {/* Fixed header to match Dashboard styling */}
+        <div className="flex items-center ml-2 mb-4 sm:mb-6">
+          <div className="w-1 h-6 sm:h-7 bg-red-500 mr-2 sm:mr-3"></div>
+          <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold">Attendance History</h2>
         </div>
         
         <div className="w-full bg-white rounded-2xl shadow-inner border border-gray-100 p-8 flex items-center justify-center min-h-[400px]">
@@ -230,12 +262,11 @@ export default function AttendancePage() {
   // No data state
   if (attendanceData.length === 0) {
     return (
-      <div className="min-h-screen bg-white py-2 sm:py-3 px-3 sm:px-4 lg:px-6 xl:px-8">
-        <div className="flex items-center w-full mb-3 sm:mb-4">
-          <span className="h-6 w-1 bg-red-600 rounded mr-3" />
-          <h2 className="text-xl sm:text-2xl font-bold text-gray-800">
-            Attendance History
-          </h2>
+      <div className="space-y-6 p-2 sm:p-4 lg:p-6">
+        {/* Fixed header to match Dashboard styling */}
+        <div className="flex items-center ml-2 mb-4 sm:mb-6">
+          <div className="w-1 h-6 sm:h-7 bg-red-500 mr-2 sm:mr-3"></div>
+          <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold">Attendance History</h2>
         </div>
         
         <div className="w-full bg-white rounded-2xl shadow-inner border border-gray-100 p-8 flex items-center justify-center min-h-[400px]">
@@ -249,13 +280,11 @@ export default function AttendancePage() {
   }
 
   return (
-    <div className="min-h-screen bg-white py-2 sm:py-3 px-3 sm:px-4 lg:px-6 xl:px-8">
-      {/* Header - Outside the main container */}
-      <div className="flex items-center w-full mb-3 sm:mb-4">
-        <span className="h-6 w-1 bg-red-600 rounded mr-3" />
-        <h2 className="text-xl sm:text-2xl font-bold text-gray-800">
-          Attendance History
-        </h2>
+    <div className="space-y-6 p-2 sm:p-4 lg:p-6">
+      {/* Fixed header to match Dashboard styling */}
+      <div className="flex items-center ml-2 mb-4 sm:mb-6">
+        <div className="w-1 h-6 sm:h-7 bg-red-500 mr-2 sm:mr-3"></div>
+        <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold">Attendance History</h2>
       </div>
 
       {/* Summary Statistics */}

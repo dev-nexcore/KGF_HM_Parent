@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { User} from "lucide-react";
 
 export default function Navbar({ children, subtitle = "-have a great day" }) {
   const [parentFullName, setParentFullName] = useState("Parent");
@@ -20,19 +21,22 @@ useEffect(() => {
   }
 }, []);
 
-
   return (
     <section className="flex-1 bg-white flex flex-col">
-      <header className="flex items-center justify-between px-4 sm:px-5 md:px-6 py-1 sm:py-1.5 md:py-2 lg:py-2.5 bg-[#BEC5AD] pl-6 sm:pl-8 md:pl-10 lg:pl-6">
-        <div className="flex-1 ml-2 sm:ml-3 md:ml-4 pl-8 -mt-3 pt-3">
-          <div className="font-semibold leading-tight text-[170%]">
+      <header className="flex items-center justify-between px-3 sm:px-5 md:px-6 py-2 sm:py-3 md:py-4 bg-[#BEC5AD]">
+        {/* Add space for hamburger menu on mobile */}
+        <div className="w-11 md:w-0 flex-shrink-0"></div>
+        <div className="flex-1 min-w-0 text-center md:text-left">
+          <div className="font-semibold leading-tight text-sm sm:text-lg md:text-xl lg:text-2xl text-black">
             Welcome Back, {parentFullName}
           </div>
-          <p className="italic text-black pt-4 -mt-3.5 sm:-mt-2 md:-mt-2.5 text-[13px] sm:text-[10px] md:text-s lg:text-sm">
+          <p className="italic text-black text-xs sm:text-sm md:text-base mt-0.5 sm:mt-1">
             {subtitle}
           </p>
         </div>
-        <div className="w-12 h-12 sm:w-8 sm:h-8 md:w-9 md:h-9 lg:w-10 lg:h-10 bg-white rounded-full border border-gray-300 flex-shrink-0" />
+        <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-white rounded-full border border-gray-300 flex-shrink-0 flex items-center justify-center">
+          <User className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 text-gray-600" />
+        </div>
       </header>
       <main className="flex-1 p-1 sm:p-3 md:p-2 pt-1 sm:pt-2">
         {children}
