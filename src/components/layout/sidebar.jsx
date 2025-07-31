@@ -8,7 +8,7 @@ export default function Sidebar() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
-    setSidebarOpen(false);
+    setSidebarOpen(false); 
   }, [pathname]);
 
   const normalize = (path) => path?.toLowerCase().replace(/\/$/, "") ?? "";
