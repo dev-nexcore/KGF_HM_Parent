@@ -28,8 +28,76 @@ export default function DashboardCards() {
     lastAbsenceDate: 'Loading...'
   });
 
+  const [feesData, setFeesData] = useState({
+    status: 'Loading...',
+    amountDue: 'Loading...',
+    totalAmount: 'Loading...',
+    dueDate: 'Loading...'
+  });
+
+// Change the endpoint back to parent controller
+const fetchAttendanceData = async (studentId, parentToken) => {
+  try {
+    // Change back to parentauth endpoint
+    const attendanceResponse = await axios.get(`http://localhost:5000/api/parentauth/attendance?studentId=${studentId}`, {
+      headers: {
+        Authorization: `Bearer ${parentToken}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    const attendanceData = attendanceResponse.data;
+    const attendanceSummary = attendanceData.attendanceSummary || {};
+    
+    console.log('Attendance API Response:', attendanceData); // Debug log
+    console.log('Attendance Summary:', attendanceSummary); // Debug log
+    
+    setAttendance({
+      // Use isPresentToday from the new controller response
+      today: attendanceSummary.isPresentToday ? "Present" : "Absent",
+      
+      // Use the proper present/total days format
+      last7Days: `${attendanceSummary.presentDays || 0}/${attendanceSummary.totalDays || 0} Present`,
+      
+      // Use absentDays directly
+      totalAbsences: `${attendanceSummary.absentDays || 0} Days`,
+      
+      // Format the last absence date
+      lastAbsenceDate: formatLastAbsence(attendanceSummary.lastAbsence)
+    });
+
+  } catch (error) {
+    console.error('Error fetching attendance data:', error);
+    setAttendance({
+      today: 'Error',
+      last7Days: 'Error',
+      totalAbsences: 'Error',
+      lastAbsenceDate: 'Error'
+    });
+  }
+};
+
+// Helper function to format last absence date
+const formatLastAbsence = (lastAbsence) => {
+  if (!lastAbsence || lastAbsence === "No recent absences") {
+    return "Check records"; // Match your UI expectation
+  }
+  
+  // If it's a date string, format it
+  if (lastAbsence.includes('-') || lastAbsence.includes('/')) {
+    try {
+      const date = new Date(lastAbsence);
+      return date.toLocaleDateString();
+    } catch (e) {
+      return "Check records";
+    }
+  }
+  
+  return lastAbsence;
+};
+
   useEffect(() => {
-    const fetchStudentData = async () => {
+    const fetchParentDashboardData = async () => {
       try {
         const parentToken = localStorage.getItem('parentToken');
         if (!parentToken) throw new Error('Parent token not found');
@@ -38,34 +106,55 @@ export default function DashboardCards() {
         const studentId = tokenPayload.studentId;
         if (!studentId) throw new Error('Student ID not found in token');
 
-        const response = await axios.get(`http://localhost:5000/api/studentauth/profile/${studentId}`, {
+        // Use the PARENT dashboard endpoint instead of student endpoint
+        const response = await axios.get(`http://localhost:5000/api/parentauth/dashboard?studentId=${studentId}`, {
           headers: {
             Authorization: `Bearer ${parentToken}`,
             'Content-Type': 'application/json'
           }
         });
 
-        const student = response.data;
-        const studentName = student.studentName || student.name || student.firstName + ' ' + student.lastName || '';
-        const nameParts = studentName ? studentName.split(' ') : ['', ''];
-        const firstName = nameParts[0] || student.firstName || '';
-        const lastName = nameParts.slice(1).join(' ') || student.lastName || '';
+        const dashboardData = response.data;
+        const studentInfo = dashboardData.studentInfo;
 
+        // Extract student name properly
+         const firstName = studentInfo.firstName || '';
+        const lastName = studentInfo.lastName || '';
+        
+        console.log('Student Info from API:', studentInfo); // Debug log
         setStudentData({
           firstName,
           lastName,
-          studentId: student.studentId || studentId,
-          roomNo: student.roomNo || 'N/A',
-          bedAllotment: student.bedAllotment || 'N/A',
-          wardernName: student.wardernName || 'N/A',
-          profileImage: student.profileImage ? `http://localhost:5000/${student.profileImage}` : null,
+          studentId: studentInfo.studentId || studentId,
+          roomNo: studentInfo.roomBedNumber || 'N/A', // Note: API returns roomBedNumber
+          bedAllotment: studentInfo.roomBedNumber || 'N/A',
+          profileImage: studentInfo.photo ? `http://localhost:5000/${studentInfo.photo}` : null,
           loading: false,
           error: null
         });
 
-        fetchAttendance(student.studentId || studentId);
+      // Fetch attendance data separately using the dedicated attendance endpoint
+await fetchAttendanceData(studentId, parentToken);
+
+        // Set fees data from dashboard response
+        const feesOverview = dashboardData.feesOverview || {};
+        setFeesData({
+          status: feesOverview.status || 'Not Available',
+          amountDue: feesOverview.amountDue || 0,
+          totalAmount: feesOverview.totalAmount || 0,
+          dueDate: feesOverview.dueDate || 'N/A'
+        });
+
+        // Set warden data from dashboard response
+        const wardenInfo = dashboardData.wardenInfo || {};
+        setWardenData({
+          wardens: wardenInfo.wardenName ? [{ firstName: wardenInfo.wardenName.split(' ')[0] || '', lastName: wardenInfo.wardenName.split(' ').slice(1).join(' ') || '' }] : [],
+          loading: false,
+          error: null
+        });
+
       } catch (error) {
-        console.error('Error fetching student data:', error);
+        console.error('Error fetching parent dashboard data:', error);
         let errorMessage = 'Unknown error occurred';
         if (error.response) errorMessage = error.response.data?.message || `Server error: ${error.response.status}`;
         else if (error.request) errorMessage = 'Network error - unable to reach server';
@@ -76,80 +165,20 @@ export default function DashboardCards() {
           loading: false,
           error: errorMessage
         }));
-      }
-    };
 
-    const fetchAttendance = async (studentId) => {
-      try {
-        const response = await axios.get(`http://localhost:5000/api/studentauth/attendance-log/${studentId}`);
-        const attendanceLog = response.data.attendanceLog;
-
-        const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
-
-        let todayPresent = false;
-        let recentPresence = 0;
-        let lastAbsence = null;
-
-        const now = new Date();
-
-        for (let i = 0; i < attendanceLog.length; i++) {
-          const log = attendanceLog[i];
-          const checkInDate = new Date(log.checkInDate);
-          const localDateStr = checkInDate.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
-
-          const daysAgo = Math.floor((now - new Date(localDateStr)) / (1000 * 60 * 60 * 24));
-
-          if (localDateStr === todayStr) todayPresent = true;
-          if (daysAgo < 7) recentPresence += 1;
-
-          if (!log.checkOutDate) lastAbsence = localDateStr;
-        }
-
-        const totalAbsences = attendanceLog.filter(log => !log.checkOutDate).length;
-
-        setAttendance({
-          today: todayPresent ? "Present" : "Absent",
-          last7Days: `${recentPresence}/7 Present`,
-          totalAbsences: `${totalAbsences} Days`,
-          lastAbsenceDate: lastAbsence || "None"
-        });
-      } catch (err) {
-        console.error('Error fetching attendance:', err);
         setAttendance({
           today: 'Error',
           last7Days: 'Error',
           totalAbsences: 'Error',
           lastAbsenceDate: 'Error'
         });
-      }
-    };
-   const fetchWardenData = async () => {
-      try {
-        setWardenData(prev => ({ ...prev, loading: true }));
-        
-        // Use the public endpoint that doesn't require authentication
-        const response = await axios.get('http://localhost:5000/api/wardenauth/all', {
-          headers: {
-            'Content-Type': 'application/json'
-          }
+
+        setFeesData({
+          status: 'Error',
+          amountDue: 'Error',
+          totalAmount: 'Error',
+          dueDate: 'Error'
         });
-
-        if (response.data.success) {
-          setWardenData({
-            wardens: response.data.wardens,
-            loading: false,
-            error: null
-          });
-        } else {
-          throw new Error(response.data.message || 'Failed to fetch wardens');
-        }
-
-      } catch (error) {
-        console.error('Error fetching warden data:', error);
-        let errorMessage = 'Unknown error occurred';
-        if (error.response) errorMessage = error.response.data?.message || `Server error: ${error.response.status}`;
-        else if (error.request) errorMessage = 'Network error - unable to reach server';
-        else errorMessage = error.message;
 
         setWardenData({
           wardens: [],
@@ -159,10 +188,8 @@ export default function DashboardCards() {
       }
     };
 
-    fetchStudentData();
-    fetchWardenData();
+    fetchParentDashboardData();
   }, []);
-
 
   const displayName = studentData.loading 
     ? 'Loading...' 
@@ -172,17 +199,13 @@ export default function DashboardCards() {
 
   const displayStudentId = studentData.studentId || 'N/A';
 
-    const getWardenNames = () => {
+  const getWardenNames = () => {
     if (wardenData.loading) return 'Loading...';
     if (wardenData.error) return 'Error loading wardens';
-    if (wardenData.wardens.length === 0) return 'No wardens found';
+    if (wardenData.wardens.length === 0) return 'No wardens assigned';
     
-    // If you want to show all wardens, join their names
-    return wardenData.wardens.map(warden => `${warden.firstName} ${warden.lastName}`).join(', ');
-    
-    // If you want to show just the first warden
-    // const firstWarden = wardenData.wardens[0];
-    // return `${firstWarden.firstName} ${firstWarden.lastName}`;
+    // Show warden names
+    return wardenData.wardens.map(warden => `${warden.firstName} ${warden.lastName}`.trim()).join(', ');
   };
 
   return (
@@ -222,14 +245,14 @@ export default function DashboardCards() {
             </div>
           </div>
 
-          {/* Fees Card - Removed conflicting positioning */}
+          {/* Fees Card - Now using real data */}
           <div className="bg-white rounded-xl shadow-lg w-full max-w-md mx-auto lg:max-w-none lg:min-h-[280px] min-h-[280px] sm:min-h-[300px] flex flex-col">
             <h3 className="bg-[#9CAD8F] rounded-t-xl px-3 sm:px-4 py-2 sm:py-3 font-bold text-black text-xs sm:text-sm lg:text-base">Fees Overview</h3>
             <div className="p-3 sm:p-4 lg:p-6 space-y-2 sm:space-y-3 flex-1 flex flex-col justify-center">
-              <InfoRow label="Total Fees:" value="₹50,000" />
-              <InfoRow label="Paid:" value="₹30,000" color="text-green-600" />
-              <InfoRow label="Due:" value="₹20,000" color="text-red-600" />
-              <InfoRow label="Next Due date:" value="15th Oct 2025" color="text-gray-500" />
+              <InfoRow label="Status:" value={feesData.status} color={feesData.status === 'Paid' ? 'text-green-600' : 'text-red-600'} />
+              <InfoRow label="Total Fees:" value={feesData.totalAmount !== 'Loading...' ? `₹${feesData.totalAmount}` : feesData.totalAmount} />
+              <InfoRow label="Amount Due:" value={feesData.amountDue !== 'Loading...' ? `₹${feesData.amountDue}` : feesData.amountDue} color={feesData.amountDue > 0 ? "text-red-600" : "text-green-600"} />
+              <InfoRow label="Due Date:" value={feesData.dueDate !== 'N/A' && feesData.dueDate !== 'Loading...' ? new Date(feesData.dueDate).toLocaleDateString() : feesData.dueDate} color="text-gray-500" />
             </div>
           </div>
 
@@ -238,7 +261,7 @@ export default function DashboardCards() {
             <h3 className="bg-[#9CAD8F] rounded-t-xl px-3 sm:px-4 py-2 sm:py-3 font-bold text-black text-xs sm:text-sm lg:text-base">Attendance Summary</h3>
             <div className="p-3 sm:p-4 lg:p-6 space-y-2 sm:space-y-3 flex-1 flex flex-col justify-center">
               <InfoRow label="Today:" value={attendance.today} color={attendance.today === "Present" ? "text-green-600" : "text-red-600"} />
-              <InfoRow label="Last 7 days:" value={attendance.last7Days} />
+              <InfoRow label="Present Days:" value={attendance.last7Days} />
               <InfoRow label="Total absences:" value={attendance.totalAbsences} />
               <InfoRow label="Last absence:" value={attendance.lastAbsenceDate} color="text-gray-500" />
             </div>
@@ -249,8 +272,7 @@ export default function DashboardCards() {
             <h3 className="bg-[#9CAD8F] rounded-t-xl px-3 sm:px-4 py-2 sm:py-3 font-bold text-black text-xs sm:text-sm lg:text-base">Hostel Details</h3>
             <div className="p-3 sm:p-4 lg:p-6 space-y-2 sm:space-y-3 flex-1 flex flex-col justify-center">
               <InfoRow label="Status:" value="Allocated" color="text-green-600" />
-              <InfoRow label="Room no:" value={studentData.roomNo} />
-              <InfoRow label="Bed no:" value={studentData.bedAllotment} />
+              <InfoRow label="Room & Bed:" value={studentData.roomNo} />
               <InfoRow label="Hostel Warden:" value={getWardenNames()} />
             </div>
           </div>
@@ -260,8 +282,6 @@ export default function DashboardCards() {
     </div>
   );
 };
-
-
 
 function InfoRow({ label, value, color = "text-black" }) {
   return (
