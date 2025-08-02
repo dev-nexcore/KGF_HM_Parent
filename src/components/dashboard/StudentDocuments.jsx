@@ -153,7 +153,7 @@ export default function Documents() {
 
   return (
     <div className="space-y-6 p-2 sm:p-4 lg:p-6">
-      <div className="flex items-center ml-2 mb-3 -mt-7">
+      <div className="flex items-center ml-2 mb-3 md:-mt-7">
         <Link
           href="/dashboard"
           className="flex items-center text-sm text-black-600 hover:underline font-medium"

@@ -186,34 +186,71 @@ export default function LeaveManagementTable() {
   };
 
   // Action buttons component
-  const ActionButtons = ({ leave }) => {
-    if (leave.status !== 'PENDING') {
-      return (
-        <span className="text-sm text-gray-500 font-medium">
-          {leave.status === 'APPROVED' ? '✅ Approved' : '❌ Rejected'}
-        </span>
-      );
-    }
+const ProfessionalActionButtons = ({ leave }) => {
+  const [showDropdown, setShowDropdown] = useState(false);
 
+  if (leave.status !== 'PENDING') {
     return (
-      <div className="flex gap-2 justify-center">
-        <button
-          onClick={() => handleLeaveAction(leave, 'approved')}
-          disabled={actionLoading[leave._id]}
-          className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-xs font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-        >
-          {actionLoading[leave._id] ? '...' : 'Approve'}
-        </button>
-        <button
-          onClick={() => handleLeaveAction(leave, 'rejected')}
-          disabled={actionLoading[leave._id]}
-          className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-xs font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-        >
-          {actionLoading[leave._id] ? '...' : 'Reject'}
-        </button>
+      <div className="flex justify-center items-center">
+        <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium border ${
+          leave.status === 'APPROVED' 
+            ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
+            : 'bg-red-50 text-red-700 border-red-200'
+        }`}>
+          <div className={`w-1.5 h-1.5 rounded-full ${
+            leave.status === 'APPROVED' ? 'bg-emerald-500' : 'bg-red-500'
+          }`}></div>
+          {leave.status === 'APPROVED' ? 'Approved' : 'Declined'}
+        </div>
       </div>
     );
-  };
+  }
+
+  return (
+    <div className="relative flex justify-center">
+      <button
+        onClick={() => setShowDropdown(!showDropdown)}
+        className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+      >
+        Review
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      {showDropdown && (
+        <div className="absolute top-full mt-1 right-0 w-40 bg-white border border-gray-200 rounded-md shadow-lg z-10">
+          <button
+            onClick={() => {
+              handleLeaveAction(leave, 'approved');
+              setShowDropdown(false);
+            }}
+            disabled={actionLoading[leave._id]}
+            className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-700 flex items-center gap-2 disabled:opacity-50"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+            Approve
+          </button>
+          <button
+            onClick={() => {
+              handleLeaveAction(leave, 'rejected');
+              setShowDropdown(false);
+            }}
+            disabled={actionLoading[leave._id]}
+            className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-red-50 hover:text-red-700 flex items-center gap-2 disabled:opacity-50"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+            Decline
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
 
   // Loading state
   if (loading) {
@@ -312,10 +349,11 @@ export default function LeaveManagementTable() {
         <div className="w-full bg-white rounded-2xl shadow-inner border border-gray-100 overflow-hidden" style={{ boxShadow: 'inset 0 4px 10px rgba(0, 0, 0, 0.1)' }}>
           <div className="w-full flex flex-col items-center p-4 md:p-5 pb-4">
             
-            {/* Mobile View */}
-            <div className="md:hidden w-full max-w-sm">
-              <div className="p-5 mb-3 rounded" style={{ backgroundColor: '#D9D9D9' }}>
-                <div className="grid grid-cols-4 gap-3 text-base font-bold text-gray-800">
+            {/* Improved Mobile View with Better Spacing */}
+            <div className="md:hidden w-full">
+              {/* Mobile Header - More Spacious */}
+              <div className="p-4 mb-4 rounded-lg" style={{ backgroundColor: '#D9D9D9' }}>
+                <div className="grid grid-cols-4 gap-4 text-sm font-bold text-gray-800">
                   <div className="text-center">Type</div>
                   <div className="text-center">From</div>
                   <div className="text-center">To</div>
@@ -323,31 +361,58 @@ export default function LeaveManagementTable() {
                 </div>
               </div>
 
-              <div className="space-y-3 mb-0">
+              {/* Mobile Cards with Better Spacing */}
+              <div className="space-y-4">
                 {leaveData.map((row, i) => (
                   <div
                     key={row._id || i}
-                    className={`bg-white border border-gray-200 p-5 rounded ${i === leaveData.length - 1 ? 'mb-0' : ''}`}
+                    className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden"
                   >
-                    <div className="grid grid-cols-4 gap-3 text-sm items-center">
-                      <div className="text-center font-bold text-gray-800 py-1">{row.type}</div>
-                      <div className="text-center font-bold text-gray-600 py-1">{row.from}</div>
-                      <div className="text-center font-bold text-gray-600 py-1">{row.to}</div>
-                      <div className="flex justify-center items-center py-1">
-                        <ActionButtons leave={row} />
+                    {/* Top Section - Type, Dates, Action */}
+                    <div className="p-4">
+                      <div className="grid grid-cols-4 gap-3 items-center">
+                        <div className="text-center">
+                          <div className="text-sm font-bold text-gray-800 leading-tight">
+                            {row.type}
+                          </div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-xs font-semibold text-gray-600 leading-tight break-words">
+                            {row.from}
+                          </div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-xs font-semibold text-gray-600 leading-tight break-words">
+                            {row.to}
+                          </div>
+                        </div>
+                        <div className="flex justify-center">
+                          <div className="scale-90">
+                            <ProfessionalActionButtons leave={row} />
+                          </div>
+                        </div>
                       </div>
                     </div>
-                    <div className="mt-3 pt-3 border-t border-gray-200">
-                      <div className="text-center">
-                        <span className="text-xs font-bold text-gray-500">Reason: </span>
-                        <span className="text-sm font-bold text-gray-700">{row.reason}</span>
-                      </div>
-                      <div className="text-center mt-2">
-                        <span
-                          className={`inline-block px-3 py-1 text-xs font-semibold rounded-sm ${statusColors[row.status]}`}
-                        >
-                          {row.status}
-                        </span>
+                    
+                    {/* Bottom Section - Reason and Status */}
+                    <div className="px-4 pb-4">
+                      <div className="border-t border-gray-100 pt-3 space-y-3">
+                        {/* Reason */}
+                        <div className="bg-gray-50 p-3 rounded-md">
+                          <div className="text-xs font-semibold text-gray-500 mb-1">Reason:</div>
+                          <div className="text-sm font-medium text-gray-700 leading-relaxed">
+                            {row.reason}
+                          </div>
+                        </div>
+                        
+                        {/* Status */}
+                        <div className="text-center">
+                          <span
+                            className={`inline-block px-4 py-2 text-xs font-semibold rounded-md ${statusColors[row.status]}`}
+                          >
+                            {row.status}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -355,7 +420,7 @@ export default function LeaveManagementTable() {
               </div>
             </div>
 
-            {/* Desktop Table */}
+            {/* Desktop Table - Unchanged */}
             <div className="hidden md:block w-full max-w-none lg:max-w-6xl xl:max-w-7xl">
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[700px]">
@@ -409,7 +474,7 @@ export default function LeaveManagementTable() {
                           </div>
                         </td>
                         <td className="py-3 md:py-4 px-4 md:px-6">
-                          <ActionButtons leave={row} />
+                          <ProfessionalActionButtons leave={row} />
                         </td>
                       </tr>
                     ))}
@@ -423,7 +488,8 @@ export default function LeaveManagementTable() {
 
       {/* Confirmation Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+<div className="fixed inset-0 bg-black/30 backdrop-blur-md flex items-center justify-center z-50 p-4 transition-all duration-300 ease-in-out">
+
           <div className="bg-white rounded-lg max-w-md w-full p-6">
             <h3 className="text-lg font-bold mb-4">
               {modalAction === 'approved' ? 'Approve Leave Request' : 'Reject Leave Request'}

@@ -250,7 +250,7 @@ await fetchAttendanceData(studentId, parentToken);
             <h3 className="bg-[#9CAD8F] rounded-t-xl px-3 sm:px-4 py-2 sm:py-3 font-bold text-black text-xs sm:text-sm lg:text-base">Fees Overview</h3>
             <div className="p-3 sm:p-4 lg:p-6 space-y-2 sm:space-y-3 flex-1 flex flex-col justify-center">
               <InfoRow label="Status:" value={feesData.status} color={feesData.status === 'Paid' ? 'text-green-600' : 'text-red-600'} />
-              <InfoRow label="Total Fees:" value={feesData.totalAmount !== 'Loading...' ? `₹${feesData.totalAmount}` : feesData.totalAmount} />
+              <InfoRow label="Total Fees:" value={feesData.totalAmount !== 'Loading...' ? "₹7000" : feesData.totalAmount} />
               <InfoRow label="Amount Due:" value={feesData.amountDue !== 'Loading...' ? `₹${feesData.amountDue}` : feesData.amountDue} color={feesData.amountDue > 0 ? "text-red-600" : "text-green-600"} />
               <InfoRow label="Due Date:" value={feesData.dueDate !== 'N/A' && feesData.dueDate !== 'Loading...' ? new Date(feesData.dueDate).toLocaleDateString() : feesData.dueDate} color="text-gray-500" />
             </div>

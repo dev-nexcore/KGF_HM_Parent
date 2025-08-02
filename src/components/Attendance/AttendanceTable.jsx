@@ -73,7 +73,7 @@ export default function AttendancePage() {
     fetchAttendanceData();
   }, []);
 
-  // 🔧 Enhanced hostel attendance processing logic
+  // 🔧 CORRECTED: Count unique calendar days, not check-ins
   const processAttendanceData = (attendanceLog) => {
     const processedData = [];
     
@@ -87,7 +87,8 @@ export default function AttendancePage() {
     // Sort by date (oldest first for processing)
     const sortedLog = [...attendanceLog].sort((a, b) => new Date(a.checkInDate) - new Date(b.checkInDate));
     
-    let presentDays = 0;
+    // Track unique days and outings
+    const uniquePresentDays = new Set();
     let absentDays = 0;
     let outings = 0;
     
@@ -100,6 +101,10 @@ export default function AttendancePage() {
       
       const checkInDate = new Date(currentEntry.checkInDate);
       const checkOutDate = currentEntry.checkOutDate ? new Date(currentEntry.checkOutDate) : null;
+      
+      // Add this day to unique present days set
+      const dayKey = checkInDate.toDateString(); // "Mon Aug 02 2025"
+      uniquePresentDays.add(dayKey);
       
       // Format for display
       const dateStr = checkInDate.toLocaleDateString('en-GB', {
@@ -125,9 +130,8 @@ export default function AttendancePage() {
           })
         : '-';
       
-      // Determine status and calculate days
+      // Determine status
       let status = 'Present';
-      let daysCovered = 1;
       
       if (checkOutDate) {
         outings++; // Count every checkout as an outing
@@ -139,12 +143,11 @@ export default function AttendancePage() {
           
           if (hoursAway >= 24) {
             status = 'Extended Away';
-            const daysAway = Math.ceil(hoursAway / 24) - 1; // Don't count the checkout day as absent
+            // Calculate days absent (between checkout and next checkin)
+            const daysAway = Math.floor(hoursAway / 24);
             absentDays += daysAway;
-            daysCovered = 1; // Only count the check-in day as present
           } else {
             status = 'Day Trip'; // Went out but came back same day
-            daysCovered = 1;
           }
         } else {
           // Last entry with checkout - check if they're still away
@@ -153,68 +156,22 @@ export default function AttendancePage() {
             status = 'Currently Away';
             const daysAway = Math.floor(hoursAway / 24);
             absentDays += daysAway;
-            daysCovered = 1; // Only count the check-in day as present
           } else {
             status = 'Day Trip'; // Recent checkout, not yet 24 hours
-            daysCovered = 1;
           }
         }
       } else {
-        // No checkout - calculate continuous present days
-        if (nextEntry) {
-          const nextCheckIn = new Date(nextEntry.checkInDate);
-          daysCovered = Math.ceil((nextCheckIn - checkInDate) / (1000 * 60 * 60 * 24));
-        } else {
-          // Last entry without checkout - present until today
-          daysCovered = Math.ceil((today - checkInDate) / (1000 * 60 * 60 * 24)) + 1;
-        }
+        // No checkout - student is still in hostel
         status = 'Present';
       }
-      
-      presentDays += daysCovered;
       
       // Add entry to display data
       processedData.push({
         date: dateStr,
         in: checkInTime,
         out: checkOutTime,
-        status: status,
-        daysCovered: daysCovered
+        status: status
       });
-    }
-    
-    // If student has continuous present days, add them to show the progression
-    if (sortedLog.length > 0) {
-      const lastEntry = sortedLog[sortedLog.length - 1];
-      if (!lastEntry.checkOutDate) {
-        // Student is continuously present - show daily entries
-        const lastCheckIn = new Date(lastEntry.checkInDate);
-        const daysSinceLastCheckIn = Math.ceil((today - lastCheckIn) / (1000 * 60 * 60 * 24));
-        
-        // Add daily entries for continuous stay (but limit to show last 7 days to avoid clutter)
-        const daysToShow = Math.min(daysSinceLastCheckIn, 7);
-        for (let i = 1; i <= daysToShow; i++) {
-          const continuousDate = new Date(lastCheckIn);
-          continuousDate.setDate(continuousDate.getDate() + i);
-          
-          if (continuousDate <= today) {
-            const dateStr = continuousDate.toLocaleDateString('en-GB', {
-              day: '2-digit',
-              month: '2-digit',
-              year: 'numeric',
-              timeZone: 'Asia/Kolkata'
-            });
-            
-            processedData.push({
-              date: dateStr,
-              in: 'Continuous',
-              out: '-',
-              status: 'Present',
-              daysCovered: 1
-            });
-          }
-        }
-      }
     }
     
     // Sort for display (newest first)
@@ -227,7 +184,7 @@ export default function AttendancePage() {
     return {
       entries: processedData,
       summary: {
-        presentDays: Math.max(0, presentDays - absentDays),
+        presentDays: uniquePresentDays.size, // 🔧 FIXED: Count unique days, not check-ins
         absentDays: absentDays,
         outings: outings
       }
@@ -313,7 +270,7 @@ export default function AttendancePage() {
             {summaryStats.presentDays}
           </div>
           <div className="text-xs text-green-600 mt-1">
-            Continuous + day trips
+            Unique calendar days
           </div>
         </div>
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
