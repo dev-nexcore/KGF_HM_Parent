@@ -40,17 +40,18 @@ export default function Documents() {
         }
 
         // Fetch student data from your API
-        const response = await axios.get(
-          `${process.env.NEXT_PUBLIC_PROD_API_URL}/api/studentauth/profile/${studentId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${parentToken}`,
-              "Content-Type": "application/json",
-            },
-          }
-        );
+       const response = await axios.get(
+  `${process.env.NEXT_PUBLIC_PROD_API_URL}/api/parentauth/student-profile`, // ✅ Use parent route
+  {
+    headers: {
+      Authorization: `Bearer ${parentToken}`,
+      "Content-Type": "application/json",
+    },
+  }
+);
 
-        const student = response.data;
+// Update the response handling:
+const student = response.data.student;
         console.log("Student Details API Response:", student);
 
         // Parse the name parts
