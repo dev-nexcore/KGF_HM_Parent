@@ -3,8 +3,14 @@ import './globals.css';
 import { ProfileProvider } from "../components/ProfileContext";
 
 export const metadata = {
-  title: "Attendance Dashboard",
-  description: "Parent portal attendance dashboard",
+  title: {
+    default: "Parent Portal",
+    template: "%s | Parent Portal",
+  },
+  description: "Parent portal dashboard",
+  icons: {
+    icon: "/favicon.ico"
+  },
 };
 
 export default function RootLayout({ children }) {
