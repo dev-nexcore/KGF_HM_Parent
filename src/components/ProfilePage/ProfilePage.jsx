@@ -13,6 +13,16 @@ export default function ProfilePage() {
   const [uploading, setUploading] = useState(false);
   const [editedData, setEditedData] = useState({});
 
+  const updateLocalStorageAndNotify = (key, value) => {
+  if (value) {
+    localStorage.setItem(key, value);
+  } else {
+    localStorage.removeItem(key);
+  }
+  // Dispatch custom event to notify other components
+  window.dispatchEvent(new Event('localStorageUpdate'));
+};
+
   // Load profile data on component mount
   useEffect(() => {
     fetchProfileData();
@@ -28,7 +38,7 @@ export default function ProfilePage() {
       }
 
       const response = await axios.get(
-        'http://localhost:5000/api/parentauth/profile',
+        `${process.env.NEXT_PUBLIC_PROD_API_URL}/api/parentauth/profile`,
         {
           headers: {
             Authorization: `Bearer ${parentToken}`,
@@ -82,7 +92,7 @@ export default function ProfilePage() {
       formData.append('profileImage', file);
 
       const response = await axios.post(
-        'http://localhost:5000/api/parentauth/profile/image',
+        `${process.env.NEXT_PUBLIC_PROD_API_URL}/api/parentauth/profile/image`,
         formData,
         {
           headers: {
@@ -104,7 +114,7 @@ export default function ProfilePage() {
       // Store image in localStorage for immediate use
       const reader = new FileReader();
       reader.onload = (e) => {
-        localStorage.setItem('parentProfileImage', e.target.result);
+updateLocalStorageAndNotify('parentProfileImage', e.target.result);
       };
       reader.readAsDataURL(file);
 
@@ -123,7 +133,7 @@ export default function ProfilePage() {
       const parentToken = localStorage.getItem('parentToken');
       
       const response = await axios.put(
-        'http://localhost:5000/api/parentauth/profile',
+        `${process.env.NEXT_PUBLIC_PROD_API_URL}/api/parentauth/profile`,
         editedData,
         {
           headers: {
@@ -150,8 +160,7 @@ export default function ProfilePage() {
         lastName: editedData.lastName,
         contactNumber: editedData.contactNumber
       };
-      localStorage.setItem('parentInfo', JSON.stringify(updatedParentInfo));
-
+     updateLocalStorageAndNotify('parentInfo', JSON.stringify(updatedParentInfo));
       setIsEditing(false);
       toast.success('Profile updated successfully!');
 
@@ -166,7 +175,7 @@ export default function ProfilePage() {
       const parentToken = localStorage.getItem('parentToken');
       
       await axios.delete(
-        'http://localhost:5000/api/parentauth/profile/image',
+        `${process.env.NEXT_PUBLIC_PROD_API_URL}/api/parentauth/profile/image`,
         {
           headers: {
             Authorization: `Bearer ${parentToken}`
@@ -184,7 +193,7 @@ export default function ProfilePage() {
       }));
 
       // Remove from localStorage
-      localStorage.removeItem('parentProfileImage');
+     updateLocalStorageAndNotify('parentProfileImage', null);
 
       toast.success('Profile image removed successfully!');
 
@@ -196,7 +205,7 @@ export default function ProfilePage() {
 
   const getProfileImageSrc = () => {
     if (profileData?.parentInfo?.profileImage) {
-      return `http://localhost:5000/${profileData.parentInfo.profileImage}`;
+      return `${process.env.NEXT_PUBLIC_PROD_API_URL}/${profileData.parentInfo.profileImage}`;
     }
     // Check localStorage for uploaded image
     const localImage = localStorage.getItem('parentProfileImage');

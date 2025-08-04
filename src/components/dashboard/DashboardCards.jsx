@@ -39,7 +39,7 @@ export default function DashboardCards() {
 const fetchAttendanceData = async (studentId, parentToken) => {
   try {
     // Change back to parentauth endpoint
-    const attendanceResponse = await axios.get(`http://localhost:5000/api/parentauth/attendance?studentId=${studentId}`, {
+    const attendanceResponse = await axios.get(`${process.env.NEXT_PUBLIC_PROD_API_URL}/api/parentauth/attendance?studentId=${studentId}`, {
       headers: {
         Authorization: `Bearer ${parentToken}`,
         'Content-Type': 'application/json'
@@ -107,7 +107,7 @@ const formatLastAbsence = (lastAbsence) => {
         if (!studentId) throw new Error('Student ID not found in token');
 
         // Use the PARENT dashboard endpoint instead of student endpoint
-        const response = await axios.get(`http://localhost:5000/api/parentauth/dashboard?studentId=${studentId}`, {
+        const response = await axios.get(`${process.env.NEXT_PUBLIC_PROD_API_URL}/api/parentauth/dashboard?studentId=${studentId}`, {
           headers: {
             Authorization: `Bearer ${parentToken}`,
             'Content-Type': 'application/json'
@@ -128,7 +128,7 @@ const formatLastAbsence = (lastAbsence) => {
           studentId: studentInfo.studentId || studentId,
           roomNo: studentInfo.roomBedNumber || 'N/A', // Note: API returns roomBedNumber
           bedAllotment: studentInfo.roomBedNumber || 'N/A',
-          profileImage: studentInfo.photo ? `http://localhost:5000/${studentInfo.photo}` : null,
+          profileImage: studentInfo.photo ? `${process.env.NEXT_PUBLIC_PROD_API_URL}/${studentInfo.photo}` : null,
           loading: false,
           error: null
         });

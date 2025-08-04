@@ -37,7 +37,7 @@ export default function AttendancePage() {
 
         // Fetch attendance log using axios
         const response = await axios.get(
-          `http://localhost:5000/api/studentauth/attendance-log/${studentId}`,
+          `${process.env.NEXT_PUBLIC_PROD_API_URL}/api/studentauth/attendance-log/${studentId}`,
           {
             headers: {
               Authorization: `Bearer ${parentToken}`,

@@ -41,7 +41,7 @@ export default function Documents() {
 
         // Fetch student data from your API
         const response = await axios.get(
-          `http://localhost:5000/api/studentauth/profile/${studentId}`,
+          `${process.env.NEXT_PUBLIC_PROD_API_URL}/api/studentauth/profile/${studentId}`,
           {
             headers: {
               Authorization: `Bearer ${parentToken}`,
@@ -85,7 +85,7 @@ export default function Documents() {
           bedAllotment: student.bedAllotment || "N/A",
           lastCheckInDate: formatDate(student.lastCheckInDate),
           profileImage: student.profileImage
-            ? `http://localhost:5000/${student.profileImage}`
+            ? `${process.env.NEXT_PUBLIC_PROD_API_URL}/${student.profileImage}`
             : null,
           loading: false,
           error: null,

@@ -58,7 +58,7 @@ export default function LeaveManagementTable() {
 
         // Fetch leave data using axios
         const response = await axios.get(
-          `http://localhost:5000/api/parentauth/leave-management`,
+          `${process.env.NEXT_PUBLIC_PROD_API_URL}/api/parentauth/leave-management`,
           {
             params: { studentId },
             headers: {
@@ -141,7 +141,7 @@ export default function LeaveManagementTable() {
       const parentToken = localStorage.getItem('parentToken');
       
       const response = await axios.put(
-        'http://localhost:5000/api/parentauth/leave-status',
+        `${process.env.NEXT_PUBLIC_PROD_API_URL}/api/parentauth/leave-status`,
         {
           leaveId: selectedLeave._id,
           status: modalAction,

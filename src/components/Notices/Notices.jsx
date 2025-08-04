@@ -35,7 +35,7 @@ export default function NoticesPage() {
 
         // Fetch notices using axios
         const response = await axios.get(
-          `http://localhost:5000/api/parentauth/notices`,
+          `${process.env.NEXT_PUBLIC_PROD_API_URL}/api/parentauth/notices`,
           {
             params: { studentId },
             headers: {
@@ -105,7 +105,7 @@ export default function NoticesPage() {
       if (!parentToken) return;
 
       await axios.patch(
-        `http://localhost:5000/api/parentauth/notices/${noticeId}/read`,
+        `${process.env.NEXT_PUBLIC_PROD_API_URL}/api/parentauth/notices/${noticeId}/read`,
         {},
         {
           headers: {
@@ -270,7 +270,7 @@ export default function NoticesPage() {
                   className="bg-white hover:bg-gray-50 transition border-b border-white cursor-pointer"
                   onClick={() => handleNoticeClick(notice)}
                 >
-                  <td className="py-3 px-1 sm:py-4 sm:px-4 font-semibold text-xs sm:text-sm">
+                  <td className="py-3 sm:py-4 sm:px-4 font-semibold text-xs sm:text-sm">
                     <div className="break-words">
                       {notice.date}
                     </div>

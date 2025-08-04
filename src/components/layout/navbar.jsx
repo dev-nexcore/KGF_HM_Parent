@@ -1,34 +1,14 @@
+// src/components/layout/navbar.jsx
 "use client";
 
 import React, { useEffect, useState } from "react";
 import { User } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useProfile } from "../ProfileContext";
 
 export default function Navbar({ children, subtitle = "-have a great day" }) {
-  const [parentFullName, setParentFullName] = useState("Parent");
-  const [profileImage, setProfileImage] = useState(null);
+  const { parentFullName, profileImage, loading } = useProfile();
   const router = useRouter();
-
-  useEffect(() => {
-    const parentInfo = localStorage.getItem("parentInfo");
-    if (parentInfo) {
-      try {
-        const parsed = JSON.parse(parentInfo);
-        const firstName = parsed.firstName || parsed.firstname || "";
-        const lastName = parsed.lastName || parsed.lastName || "";
-        const fullName = `${firstName} ${lastName}`.trim();
-        setParentFullName(fullName || "Parent");
-      } catch (error) {
-        console.error("Failed to parse parent info from localStorage", error);
-      }
-    }
-
-    // Load profile image from localStorage
-    const storedImage = localStorage.getItem("parentProfileImage");
-    if (storedImage) {
-      setProfileImage(storedImage);
-    }
-  }, []);
 
   const handleProfileClick = () => {
     router.push('/profile');
@@ -54,7 +34,7 @@ export default function Navbar({ children, subtitle = "-have a great day" }) {
           className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-white rounded-full border border-gray-300 flex-shrink-0 flex items-center justify-center hover:bg-gray-50 transition-colors duration-200 overflow-hidden group cursor-pointer"
           aria-label="View Profile"
         >
-          {profileImage ? (
+          {!loading && profileImage ? (
             <img 
               src={profileImage} 
               alt="Profile" 
