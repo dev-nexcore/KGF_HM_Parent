@@ -158,7 +158,7 @@ export default function NoticesPage() {
       <div className="space-y-6 p-2 sm:p-4 lg:p-6">
         {/* Fixed header to match Dashboard styling */}
         <div className="flex items-center ml-2 mb-4 sm:mb-6">
-          <div className="w-1 h-6 sm:h-7 bg-red-500 mr-2 sm:mr-3"></div>
+          <div className="w-1 h-6 sm:h-7 bg-[#4F8DCF] mr-2 sm:mr-3"></div>
           <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold">Notices</h2>
         </div>
         
@@ -178,7 +178,7 @@ export default function NoticesPage() {
       <div className="space-y-6 p-2 sm:p-4 lg:p-6">
         {/* Fixed header to match Dashboard styling */}
         <div className="flex items-center ml-2 mb-4 sm:mb-6">
-          <div className="w-1 h-6 sm:h-7 bg-red-500 mr-2 sm:mr-3"></div>
+          <div className="w-1 h-6 sm:h-7 bg-[#4F8DCF] mr-2 sm:mr-3"></div>
           <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold">Notices</h2>
         </div>
         
@@ -204,7 +204,7 @@ export default function NoticesPage() {
       <div className="space-y-6 p-2 sm:p-4 lg:p-6">
         {/* Fixed header to match Dashboard styling */}
         <div className="flex items-center ml-2 mb-4 sm:mb-6">
-          <div className="w-1 h-6 sm:h-7 bg-red-500 mr-2 sm:mr-3"></div>
+          <div className="w-1 h-6 sm:h-7 bg-[#4F8DCF] mr-2 sm:mr-3"></div>
           <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold">Notices</h2>
         </div>
         

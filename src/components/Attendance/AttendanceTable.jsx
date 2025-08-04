@@ -3,7 +3,7 @@ import axios from "axios";
 
 const statusColors = {
   Present: "bg-green-500 text-white",
-  "Day Trip": "bg-blue-500 text-white",
+  "Day Trip": "bg-[#4F8DCF] text-white",
   "Extended Away": "bg-orange-500 text-white",
   "Currently Away": "bg-red-500 text-white",
 };
@@ -215,7 +215,7 @@ export default function AttendancePage() {
     return (
       <div className="space-y-6 p-2 sm:p-4 lg:p-6">
         <div className="flex items-center ml-2 mb-4 sm:mb-6">
-          <div className="w-1 h-6 sm:h-7 bg-red-500 mr-2 sm:mr-3"></div>
+          <div className="w-1 h-6 sm:h-7 bg-[#4F8DCF] mr-2 sm:mr-3"></div>
           <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold">Attendance History</h2>
         </div>
         
@@ -240,7 +240,7 @@ export default function AttendancePage() {
     return (
       <div className="space-y-6 p-2 sm:p-4 lg:p-6">
         <div className="flex items-center ml-2 mb-4 sm:mb-6">
-          <div className="w-1 h-6 sm:h-7 bg-red-500 mr-2 sm:mr-3"></div>
+          <div className="w-1 h-6 sm:h-7 bg-[#4F8DCF] mr-2 sm:mr-3"></div>
           <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold">Attendance History</h2>
         </div>
         
@@ -258,7 +258,7 @@ export default function AttendancePage() {
     <div className="space-y-6 p-2 sm:p-4 lg:p-6">
       {/* Header */}
       <div className="flex items-center ml-2 mb-4 sm:mb-6">
-        <div className="w-1 h-6 sm:h-7 bg-red-500 mr-2 sm:mr-3"></div>
+        <div className="w-1 h-6 sm:h-7 bg-[#4F8DCF] mr-2 sm:mr-3"></div>
         <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold">Attendance History</h2>
       </div>
 
