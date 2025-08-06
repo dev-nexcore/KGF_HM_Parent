@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import { useRouter } from "next/navigation";
 import {toast, Toaster} from "react-hot-toast";
+import { useProfile } from "../ProfileContext";
 
 export default function ParentLogin() {
   const [studentId, setStudentId] = useState("");
@@ -15,6 +16,8 @@ export default function ParentLogin() {
   const [isLoading, setIsLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
   const router = useRouter();
+  const { refreshProfile } = useProfile();
+
 
   // Mount animation (removed test toast)
   useEffect(() => {
@@ -295,6 +298,8 @@ export default function ParentLogin() {
         setIsLoading(false);
         return;
       }
+
+      refreshProfile();
 
       toast.dismiss('verifying-otp');
       toast.success("Login successful! Redirecting...", {

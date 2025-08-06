@@ -3,7 +3,6 @@ import { useState, useEffect } from "react";
 import { UserIcon } from "@heroicons/react/24/outline";
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
-
 import axios from "axios";
 
 export default function Documents() {
@@ -21,51 +20,65 @@ export default function Documents() {
     error: null,
   });
 
+  // ✅ helper to fetch photo from student-profile endpoint if not in dashboard
+  const fetchStudentPhoto = async (studentId, parentToken) => {
+    try {
+      const res = await axios.get(
+        `${process.env.NEXT_PUBLIC_PROD_API_URL}/api/parentauth/student-profile?studentId=${studentId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${parentToken}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      const profile = res.data.student;
+      let profileImageUrl = null;
+      if (profile?.profileImage) {
+        profileImageUrl = profile.profileImage;
+      } else if (profile?.photo) {
+        profileImageUrl = profile.photo;
+      }
+
+      if (profileImageUrl) {
+        setStudentData(prev => ({
+          ...prev,
+          profileImage: profileImageUrl,
+        }));
+      }
+    } catch (err) {
+      console.error("Error fetching profile photo:", err);
+    }
+  };
+
   useEffect(() => {
     const fetchStudentData = async () => {
       try {
-        // Get token from localStorage
         const parentToken = localStorage.getItem("parentToken");
+        if (!parentToken) throw new Error("Parent token not found");
 
-        if (!parentToken) {
-          throw new Error("Parent token not found");
-        }
-
-        // Decode the JWT token to get studentId
         const tokenPayload = JSON.parse(atob(parentToken.split(".")[1]));
         const studentId = tokenPayload.studentId;
+        if (!studentId) throw new Error("Student ID not found in token");
 
-        if (!studentId) {
-          throw new Error("Student ID not found in token");
-        }
+        const response = await axios.get(
+          `${process.env.NEXT_PUBLIC_PROD_API_URL}/api/parentauth/dashboard?studentId=${studentId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${parentToken}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
 
-        // Fetch student data from your API
-       const response = await axios.get(
-  `${process.env.NEXT_PUBLIC_PROD_API_URL}/api/parentauth/student-profile`, // ✅ Use parent route
-  {
-    headers: {
-      Authorization: `Bearer ${parentToken}`,
-      "Content-Type": "application/json",
-    },
-  }
-);
+        const dashboardData = response.data;
+        const studentInfo = dashboardData.studentInfo;
+        console.log("Student Details from Dashboard API:", studentInfo);
 
-// Update the response handling:
-const student = response.data.student;
-        console.log("Student Details API Response:", student);
+        const firstName = studentInfo.firstName || "";
+        const lastName = studentInfo.lastName || "";
 
-        // Parse the name parts
-        const studentName =
-          student.studentName ||
-          student.name ||
-          student.firstName + " " + student.lastName ||
-          "";
-
-        // Parse firstName and lastName from studentName
-        const nameParts = studentName ? studentName.split(" ") : ["", ""];
-        const firstName = nameParts[0] || student.firstName || "";
-        const lastName = nameParts.slice(1).join(" ") || student.lastName || "";
-        // Format last check-in date
         const formatDate = (dateString) => {
           if (!dateString) return "N/A";
           const date = new Date(dateString);
@@ -76,29 +89,52 @@ const student = response.data.student;
           });
         };
 
+        const parseRoomBed = (roomBedNumber) => {
+          if (!roomBedNumber || roomBedNumber === "N/A") {
+            return { roomNo: "N/A", bedAllotment: "N/A" };
+          }
+          if (roomBedNumber.includes("Room")) {
+            const roomMatch = roomBedNumber.match(/Room\s+(\d+)/i);
+            const roomNo = roomMatch ? roomMatch[1] : roomBedNumber;
+            return { roomNo, bedAllotment: roomBedNumber };
+          }
+          return { roomNo: roomBedNumber, bedAllotment: roomBedNumber };
+        };
+
+        const { roomNo, bedAllotment } = parseRoomBed(studentInfo.roomBedNumber);
+
+        // ✅ Prefer profileImage or photo from dashboard API
+        let profileImageUrl = null;
+        if (studentInfo.profileImage) {
+          profileImageUrl = studentInfo.profileImage;
+        } else if (studentInfo.photo) {
+          profileImageUrl = studentInfo.photo;
+        }
+
         setStudentData({
           firstName,
           lastName,
-          studentId: student.studentId || studentId,
-          email: student.email || "N/A",
-          contactNumber: student.contactNumber || "N/A",
-          roomNo: student.roomNo || "N/A",
-          bedAllotment: student.bedAllotment || "N/A",
-          lastCheckInDate: formatDate(student.lastCheckInDate),
-          profileImage: student.profileImage
-            ? `${process.env.NEXT_PUBLIC_PROD_API_URL}/${student.profileImage}`
-            : null,
+          studentId: studentInfo.studentId || studentId,
+          email: studentInfo.email || "N/A",
+          contactNumber: studentInfo.contactNumber || studentInfo.phone || "N/A",
+          roomNo,
+          bedAllotment,
+          lastCheckInDate: formatDate(studentInfo.lastCheckInDate),
+          profileImage: profileImageUrl,
           loading: false,
           error: null,
         });
+
+        // ✅ If no profile image from dashboard, fetch from profile endpoint
+        if (!profileImageUrl) {
+          await fetchStudentPhoto(studentId, parentToken);
+        }
       } catch (error) {
         console.error("Error fetching student details:", error);
 
         let errorMessage = "Unknown error occurred";
         if (error.response) {
-          errorMessage =
-            error.response.data?.message ||
-            `Server error: ${error.response.status}`;
+          errorMessage = error.response.data?.message || `Server error: ${error.response.status}`;
         } else if (error.request) {
           errorMessage = "Network error - unable to reach server";
         } else {
@@ -217,10 +253,6 @@ const student = response.data.student;
                   {studentData.firstName || "N/A"}
                 </p>
               </div>
-              {/* <div className="flex flex-col sm:contents">
-                <p className="text-gray-500">Middle Name:</p>
-                <p className="font-bold mb-2 sm:mb-0">{studentData.middleName || 'N/A'}</p>
-              </div> */}
               <div className="flex flex-col sm:contents">
                 <p className="text-gray-500">Last Name:</p>
                 <p className="font-bold mb-2 sm:mb-0">
@@ -244,12 +276,17 @@ const student = response.data.student;
                 <p className="font-bold mb-2 sm:mb-0">{studentData.roomNo}</p>
               </div>
               <div className="flex flex-col sm:contents">
-                <p className="text-gray-500">Bed Number:</p>
+                <p className="text-gray-500">Bed Allotment:</p>
                 <p className="font-bold mb-2 sm:mb-0">
                   {studentData.bedAllotment}
                 </p>
               </div>
-              <div className="flex flex-col sm:contents"></div>
+              <div className="flex flex-col sm:contents">
+                <p className="text-gray-500">Status:</p>
+                <p className="font-bold mb-2 sm:mb-0 text-green-600">
+                  {studentData.roomNo !== 'N/A' ? 'Allocated' : 'Not Allocated'}
+                </p>
+              </div>
               <div className="flex flex-col sm:contents">
                 <p className="text-gray-500">Last Check-in:</p>
                 <p className="font-bold mb-2 sm:mb-0">

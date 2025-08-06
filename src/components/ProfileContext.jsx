@@ -16,47 +16,51 @@ export const ProfileProvider = ({ children }) => {
   }, []);
 
   const fetchProfileData = async () => {
-    try {
-      const parentToken = localStorage.getItem('parentToken');
-      
-      if (!parentToken) {
-        loadFromLocalStorage();
-        return;
-      }
-
-      const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_PROD_API_URL}/api/parentauth/profile`,
-        {
-          headers: {
-            Authorization: `Bearer ${parentToken}`,
-            'Content-Type': 'application/json'
-          }
-        }
-      );
-
-      const { parentInfo } = response.data.profile;
-      
-      // Set parent name
-      const firstName = parentInfo.firstName || "";
-      const lastName = parentInfo.lastName || "";
-      const fullName = `${firstName} ${lastName}`.trim();
-      setParentFullName(fullName || "Parent");
-
-      // Set profile image
-      if (parentInfo.profileImage) {
-        setProfileImage(`${process.env.NEXT_PUBLIC_PROD_API_URL}/${parentInfo.profileImage}`);
-      } else {
-        const localImage = localStorage.getItem('parentProfileImage');
-        setProfileImage(localImage);
-      }
-
-    } catch (error) {
-      console.error('Failed to fetch profile data:', error);
+  try {
+    const parentToken = localStorage.getItem('parentToken');
+    
+    if (!parentToken) {
       loadFromLocalStorage();
-    } finally {
-      setLoading(false);
+      return;
     }
-  };
+
+    const response = await axios.get(
+      `${process.env.NEXT_PUBLIC_PROD_API_URL}/api/parentauth/profile`,
+      {
+        headers: {
+          Authorization: `Bearer ${parentToken}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+
+    const { parentInfo } = response.data.profile;
+    
+    // Set parent name
+    const firstName = parentInfo.firstName || "";
+    const lastName = parentInfo.lastName || "";
+    const fullName = `${firstName} ${lastName}`.trim();
+    setParentFullName(fullName || "Parent");
+    localStorage.setItem('parentFullName', fullName);
+
+    // Set and save profile image
+    if (parentInfo.profileImage) {
+      const imageUrl = `${process.env.NEXT_PUBLIC_PROD_API_URL}/${parentInfo.profileImage}`;
+      setProfileImage(imageUrl);
+      localStorage.setItem('parentProfileImage', imageUrl);
+    } else {
+      const localImage = localStorage.getItem('parentProfileImage');
+      setProfileImage(localImage);
+    }
+
+  } catch (error) {
+    console.error('Failed to fetch profile data:', error);
+    loadFromLocalStorage();
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   const loadFromLocalStorage = () => {
     const parentInfo = localStorage.getItem("parentInfo");
