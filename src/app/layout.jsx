@@ -4,7 +4,7 @@ import { ProfileProvider } from "../components/ProfileContext";
 
 export const metadata = {
   title: {
-    default: "Parent Portal",
+    default: "KGF_HM | Parent Portal",
     template: "%s | Parent Portal",
   },
   description: "Parent portal dashboard",
