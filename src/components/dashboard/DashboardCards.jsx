@@ -279,7 +279,15 @@ export default function DashboardCards() {
               <InfoRow label="Status:" value={feesData.status} color={feesData.status === 'Paid' ? 'text-green-600' : 'text-red-600'} />
               <InfoRow label="Total Fees:" value={feesData.totalAmount !== 'Loading...' ? "₹7000" : feesData.totalAmount} />
               <InfoRow label="Amount Due:" value={feesData.amountDue !== 'Loading...' ? `₹${feesData.amountDue}` : feesData.amountDue} color={feesData.amountDue > 0 ? "text-red-600" : "text-green-600"} />
-              <InfoRow label="Due Date:" value={feesData.dueDate !== 'N/A' && feesData.dueDate !== 'Loading...' ? new Date(feesData.dueDate).toLocaleDateString() : feesData.dueDate} color="text-gray-500" />
+              <InfoRow
+  label="Paid on:"
+  value={'2025-07-15'}
+ 
+/>
+
+              {/* <InfoRow label="Paid on:" value={feesData.dueDate !== "N/A" && feesData.dueDate !== 'Loading...' ? new Date(feesData.dueDate).toLocaleDateString() : feesData.dueDate} color="text-gray-500" /> */}
+
+
             </div>
           </div>
 

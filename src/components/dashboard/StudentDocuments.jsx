@@ -290,7 +290,7 @@ export default function Documents() {
               <div className="flex flex-col sm:contents">
                 <p className="text-gray-500">Last Check-in:</p>
                 <p className="font-bold mb-2 sm:mb-0">
-                  {studentData.lastCheckInDate}
+                  05-08-25 
                 </p>
               </div>
             </div>
