@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 
@@ -17,149 +15,169 @@ export default function AttendancePage() {
     absentDays: 0,
     outings: 0
   });
-const [loading, setLoading] = useState(true);
-const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-useEffect(() => {
-  const fetchAttendanceData = async () => {
-    try {
-      setLoading(true);
+  useEffect(() => {
+    const fetchAttendanceData = async () => {
+      try {
+        setLoading(true);
+        
+        // Get student ID from parent token
+        const parentToken = localStorage.getItem('parentToken');
+        if (!parentToken) {
+          throw new Error('Parent token not found');
+        }
+
+        const tokenPayload = JSON.parse(atob(parentToken.split('.')[1]));
+        const studentId = tokenPayload.studentId;
+        if (!studentId) {
+          throw new Error('Student ID not found in token');
+        }
+
+        // Fetch attendance log using axios
+        const response = await axios.get(
+          `${process.env.NEXT_PUBLIC_PROD_API_URL}/api/studentauth/attendance-log/${studentId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${parentToken}`,
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+
+        // API returns array of attendance records directly
+        const attendanceLog = response.data;
+        
+        // Process and format the attendance data
+        const result = processAttendanceData(attendanceLog);
+        setAttendanceData(result.entries);
+        setSummaryStats(result.summary);
+
+      } catch (error) {
+        console.error('Error fetching attendance data:', error);
+        let errorMessage = 'Failed to load attendance data';
+        
+        if (error.response) {
+          errorMessage = `Server error: ${error.response.status} - ${error.response.statusText}`;
+        } else if (error.request) {
+          errorMessage = 'Network error - unable to reach server';
+        } else {
+          errorMessage = error.message;
+        }
+        setError(errorMessage);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAttendanceData();
+  }, []);
+
+  const processAttendanceData = (attendanceLog) => {
+    const processedData = [];
+    
+    if (!attendanceLog || attendanceLog.length === 0) {
+      return {
+        entries: [],
+        summary: { presentDays: 0, absentDays: 0, outings: 0 }
+      };
+    }
+    
+    // Sort by timestamp (oldest first for processing)
+    const sortedLog = [...attendanceLog].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+    
+    // Track unique days and outings
+    const uniquePresentDays = new Set();
+    let absentDays = 0;
+    let outings = 0;
+    
+    const today = new Date();
+    let lastInTime = null;
+    
+    // Process each entry
+    for (let i = 0; i < sortedLog.length; i++) {
+      const currentEntry = sortedLog[i];
+      const timestamp = new Date(currentEntry.timestamp);
       
-      // Get student ID from parent token
-      const parentToken = localStorage.getItem('parentToken');
-      if (!parentToken) {
-        throw new Error('Parent token not found');
-      }
+      // Format date and time for display
+      const dateStr = timestamp.toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        timeZone: 'Asia/Kolkata'
+      });
+      
+      const timeStr = timestamp.toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true,
+        timeZone: 'Asia/Kolkata'
+      });
 
-      const tokenPayload = JSON.parse(atob(parentToken.split('.')[1]));
-      const studentId = tokenPayload.studentId;
-      if (!studentId) {
-        throw new Error('Student ID not found in token');
-      }
-
-      // Fetch attendance log using axios
-      const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_PROD_API_URL}/api/studentauth/attendance-log/${studentId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${parentToken}`,
-            'Content-Type': 'application/json'
+      // Track attendance metrics
+      if (currentEntry.direction === 'IN') {
+        const dayKey = timestamp.toDateString();
+        uniquePresentDays.add(dayKey);
+        lastInTime = timestamp;
+      } else if (currentEntry.direction === 'OUT') {
+        outings++;
+        const nextEntry = sortedLog[i + 1];
+        if (nextEntry) {
+          const nextInTime = new Date(nextEntry.timestamp);
+          const hoursAway = (nextInTime - timestamp) / (1000 * 60 * 60);
+          if (hoursAway >= 24) {
+            absentDays += Math.floor(hoursAway / 24);
+          }
+        } else {
+          const hoursAway = (today - timestamp) / (1000 * 60 * 60);
+          if (hoursAway >= 24) {
+            absentDays += Math.floor(hoursAway / 24);
           }
         }
-      );
-
-      // Debug log the raw response
-      console.log('Raw API Response:', response.data);
-
-      // Ensure we have an array of attendance records
-      const attendanceLog = Array.isArray(response.data) ? response.data : [];
-      if (!Array.isArray(attendanceLog)) {
-        throw new Error('Invalid attendance data format');
       }
 
-      // Process and format the attendance data
-      const result = processAttendanceData(attendanceLog);
-      setAttendanceData(result.entries);
-      setSummaryStats(result.summary);
-
-    } catch (error) {
-      console.error('Error fetching attendance data:', error);
-      let errorMessage = 'Failed to load attendance data';
-      
-      if (error.response) {
-        errorMessage = `Server error: ${error.response.status} - ${error.response.statusText}`;
-      } else if (error.request) {
-        errorMessage = 'Network error - unable to reach server';
-      } else {
-        errorMessage = error.message;
-      }
-      setError(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  fetchAttendanceData();
-}, []);
-
-// Updated processAttendanceData function
-const processAttendanceData = (attendanceLog) => {
-  const processedData = [];
-  
-  if (!attendanceLog || attendanceLog.length === 0) {
-    return {
-      entries: [],
-      summary: { presentDays: 0, absentDays: 0, outings: 0 }
-    };
-  }
-  
-  // Sort by timestamp (oldest first for processing)
-  const sortedLog = [...attendanceLog].sort((a, b) => 
-    new Date(a.timestamp) - new Date(b.timestamp)
-  );
-  
-  // Track unique days and outings
-  const uniquePresentDays = new Set();
-  let absentDays = 0;
-  let outings = 0;
-  
-  // Process each entry
-  for (let i = 0; i < sortedLog.length; i++) {
-    const currentEntry = sortedLog[i];
-    const timestamp = new Date(currentEntry.timestamp);
-    
-    // Format for display
-    const dateStr = timestamp.toLocaleDateString('en-GB', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      timeZone: 'Asia/Kolkata'
-    });
-    
-    const timeStr = timestamp.toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true,
-      timeZone: 'Asia/Kolkata'
-    });
-    
-    // Track metrics
-    if (currentEntry.direction === 'IN') {
-      uniquePresentDays.add(timestamp.toDateString());
-    } else if (currentEntry.direction === 'OUT') {
-      outings++;
-      // Check for extended absence
-      const nextEntry = sortedLog[i + 1];
-      if (nextEntry) {
-        const nextTime = new Date(nextEntry.timestamp);
-        const hoursAway = (nextTime - timestamp) / (1000 * 60 * 60);
-        if (hoursAway >= 24) {
-          absentDays += Math.floor(hoursAway / 24);
+      // Determine status
+      let status = 'Present';
+      if (currentEntry.direction === 'OUT') {
+        const nextEntry = sortedLog[i + 1];
+        if (!nextEntry) {
+          const hoursAway = (today - timestamp) / (1000 * 60 * 60);
+          status = hoursAway >= 24 ? 'Currently Away' : 'Day Trip';
+        } else {
+          const nextInTime = new Date(nextEntry.timestamp);
+          const hoursAway = (nextInTime - timestamp) / (1000 * 60 * 60);
+          status = hoursAway >= 24 ? 'Extended Away' : 'Day Trip';
         }
       }
+      
+      // Add entry to display data
+      processedData.push({
+        date: dateStr,
+        time: timeStr,
+        direction: currentEntry.direction,
+        status: status,
+        deviceName: currentEntry.deviceName,
+        verificationType: currentEntry.verificationType
+      });
     }
     
-    // Add entry to display data
-    processedData.push({
-      date: dateStr,
-      time: timeStr,
-      direction: currentEntry.direction,
-      deviceName: currentEntry.deviceName,
-      verificationType: currentEntry.verificationType,
-      employeeCode: currentEntry.employeeCode,
-      status: currentEntry.direction === 'IN' ? 'Present' : 'Out'
+    // Sort for display (newest first)
+    processedData.sort((a, b) => {
+      const dateA = new Date(a.date.split('/').reverse().join('/'));
+      const dateB = new Date(b.date.split('/').reverse().join('/'));
+      return dateB - dateA;
     });
-  }
-  
-  return {
-    entries: processedData.reverse(), // newest first
-    summary: {
-      presentDays: uniquePresentDays.size,
-      absentDays: absentDays,
-      outings: outings
-    }
+    
+    return {
+      entries: processedData,
+      summary: {
+        presentDays: uniquePresentDays.size,
+        absentDays: absentDays,
+        outings: outings
+      }
+    };
   };
-};
 
   // Loading state
   if (loading) {
