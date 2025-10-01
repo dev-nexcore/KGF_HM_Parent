@@ -192,7 +192,7 @@ export default function Documents() {
     <div className="space-y-6 p-2 sm:p-4 lg:p-6">
       <div className="flex items-center ml-2 mb-3 md:-mt-7">
         <Link
-          href="/dashboard"
+          href="/parent/dashboard"
           className="flex items-center text-sm text-black-600 hover:underline font-medium"
         >
           <ArrowLeft className="w-4 h-4 mr-1" />
