@@ -123,7 +123,7 @@ export default function Sidebar() {
           {/* Navigation Links - full width */}
           <div className="flex-1">
             {[
-              { href: "/Dashboard", icon: "/parent/dashboard.png", label: "Dashboard" },
+              { href: "/dashboard", icon: "/parent/dashboard.png", label: "Dashboard" },
               { href: "/Attendance", icon: "/parent/calender.png", label: "Attendance History" },
               { href: "/Leave", icon: "/parent/leave.png", label: "Leave Management" },
               { href: "/Fees", icon: "/parent/wallet.png", label: "Fees Paid" },
