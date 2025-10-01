@@ -123,12 +123,12 @@ export default function Sidebar() {
           {/* Navigation Links - full width */}
           <div className="flex-1">
             {[
-              { href: "/Dashboard", icon: "/dashboard.png", label: "Dashboard" },
-              { href: "/Attendance", icon: "/calender.png", label: "Attendance History" },
-              { href: "/Leave", icon: "/leave.png", label: "Leave Management" },
-              { href: "/Fees", icon: "/wallet.png", label: "Fees Paid" },
-              { href: "/Notices", icon: "/notice.png", label: "Notices" },
-              { href: "/Makepayment", icon: "/payment.png", label: "Make Payments" },
+              { href: "/Dashboard", icon: "/parent/dashboard.png", label: "Dashboard" },
+              { href: "/Attendance", icon: "/parent/calender.png", label: "Attendance History" },
+              { href: "/Leave", icon: "/parent/leave.png", label: "Leave Management" },
+              { href: "/Fees", icon: "/parent/wallet.png", label: "Fees Paid" },
+              { href: "/Notices", icon: "/parent/notice.png", label: "Notices" },
+              { href: "/Makepayment", icon: "/parent/payment.png", label: "Make Payments" },
             ].map(({ href, icon, label }) => {
               const active = isActive(href);
               return (
