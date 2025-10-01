@@ -1,15 +1,15 @@
 'use client';
+import AttendancePage from "@/components/Attendance/AttendanceTable";
 import Navbar from "@/components/layout/navbar";
 import Sidebar from "@/components/layout/sidebar";
-import AttendanceTable from "@/components/Attendance/AttendanceTable";
 
-export default function AttendancePage() {
+export default function AttendanceTable(){
    return (
       <div className="flex">
         <Sidebar />
         <div className="flex-1 min-h-screen">
           <Navbar />
-          <AttendanceTable />
+          <AttendancePage />
         </div>
       </div>
     )

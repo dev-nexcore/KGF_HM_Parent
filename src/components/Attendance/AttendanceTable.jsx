@@ -8,6 +8,7 @@ const statusColors = {
   "Day Trip": "bg-[#4F8DCF] text-white",
   "Extended Away": "bg-orange-500 text-white",
   "Currently Away": "bg-red-500 text-white",
+  Out: "bg-red-500 text-white",
 };
 
 export default function AttendancePage() {
@@ -17,149 +18,175 @@ export default function AttendancePage() {
     absentDays: 0,
     outings: 0
   });
-const [loading, setLoading] = useState(true);
-const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-useEffect(() => {
-  const fetchAttendanceData = async () => {
-    try {
-      setLoading(true);
+  useEffect(() => {
+    const fetchAttendanceData = async () => {
+      try {
+        setLoading(true);
+        
+        // Get student ID from parent token
+        const parentToken = localStorage.getItem('parentToken');
+        if (!parentToken) {
+          throw new Error('Parent token not found');
+        }
+
+        const tokenPayload = JSON.parse(atob(parentToken.split('.')[1]));
+        const studentId = tokenPayload.studentId;
+        if (!studentId) {
+          throw new Error('Student ID not found in token');
+        }
+
+        // Fetch attendance log using axios
+        const response = await axios.get(
+          `${process.env.NEXT_PUBLIC_PROD_API_URL}/api/studentauth/attendance-log/${studentId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${parentToken}`,
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+
+        console.log('Raw API Response:', response.data);
+
+        // Extract attendanceLog from response
+        const attendanceLog = response.data?.attendanceLog || [];
+        
+        if (!Array.isArray(attendanceLog)) {
+          throw new Error('Invalid attendance data format');
+        }
+
+        // Process and format the attendance data
+        const result = processAttendanceData(attendanceLog);
+        setAttendanceData(result.entries);
+        setSummaryStats(result.summary);
+
+      } catch (error) {
+        console.error('Error fetching attendance data:', error);
+        let errorMessage = 'Failed to load attendance data';
+        
+        if (error.response) {
+          errorMessage = `Server error: ${error.response.status} - ${error.response.statusText}`;
+        } else if (error.request) {
+          errorMessage = 'Network error - unable to reach server';
+        } else {
+          errorMessage = error.message;
+        }
+        setError(errorMessage);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAttendanceData();
+  }, []);
+
+  // Updated processAttendanceData function for actual API format
+  const processAttendanceData = (attendanceLog) => {
+    const processedData = [];
+    
+    if (!attendanceLog || attendanceLog.length === 0) {
+      return {
+        entries: [],
+        summary: { presentDays: 0, absentDays: 0, outings: 0 }
+      };
+    }
+    
+    // Track unique days and outings
+    const uniquePresentDays = new Set();
+    let absentDays = 0;
+    let outings = 0;
+    
+    // Process each attendance log entry
+    attendanceLog.forEach((entry) => {
+      // Process check-in
+      if (entry.checkInDate) {
+        const checkInTime = new Date(entry.checkInDate);
+        
+        const dateStr = checkInTime.toLocaleDateString('en-GB', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+          timeZone: 'Asia/Kolkata'
+        });
+        
+        const timeStr = checkInTime.toLocaleTimeString('en-US', {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: true,
+          timeZone: 'Asia/Kolkata'
+        });
+        
+        uniquePresentDays.add(checkInTime.toDateString());
+        
+        processedData.push({
+          date: dateStr,
+          time: timeStr,
+          direction: 'IN',
+          deviceName: 'Student App',
+          verificationType: 'Selfie',
+          employeeCode: entry.studentId || 'N/A',
+          status: 'Present',
+          originalTimestamp: checkInTime
+        });
+      }
       
-      // Get student ID from parent token
-      const parentToken = localStorage.getItem('parentToken');
-      if (!parentToken) {
-        throw new Error('Parent token not found');
-      }
-
-      const tokenPayload = JSON.parse(atob(parentToken.split('.')[1]));
-      const studentId = tokenPayload.studentId;
-      if (!studentId) {
-        throw new Error('Student ID not found in token');
-      }
-
-      // Fetch attendance log using axios
-      const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_PROD_API_URL}/api/studentauth/attendance-log/${studentId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${parentToken}`,
-            'Content-Type': 'application/json'
+      // Process check-out
+      if (entry.checkOutDate) {
+        const checkOutTime = new Date(entry.checkOutDate);
+        
+        const dateStr = checkOutTime.toLocaleDateString('en-GB', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+          timeZone: 'Asia/Kolkata'
+        });
+        
+        const timeStr = checkOutTime.toLocaleTimeString('en-US', {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: true,
+          timeZone: 'Asia/Kolkata'
+        });
+        
+        outings++;
+        
+        // Calculate hours away if both check-in and check-out exist
+        if (entry.checkInDate) {
+          const checkInTime = new Date(entry.checkInDate);
+          const hoursAway = (checkOutTime - checkInTime) / (1000 * 60 * 60);
+          if (hoursAway >= 24) {
+            absentDays += Math.floor(hoursAway / 24);
           }
         }
-      );
-
-      // Debug log the raw response
-      console.log('Raw API Response:', response.data);
-
-      // Ensure we have an array of attendance records
-      const attendanceLog = Array.isArray(response.data) ? response.data : [];
-      if (!Array.isArray(attendanceLog)) {
-        throw new Error('Invalid attendance data format');
+        
+        processedData.push({
+          date: dateStr,
+          time: timeStr,
+          direction: 'OUT',
+          deviceName: 'Student App',
+          verificationType: 'Selfie',
+          employeeCode: entry.studentId || 'N/A',
+          status: 'Out',
+          originalTimestamp: checkOutTime
+        });
       }
-
-      // Process and format the attendance data
-      const result = processAttendanceData(attendanceLog);
-      setAttendanceData(result.entries);
-      setSummaryStats(result.summary);
-
-    } catch (error) {
-      console.error('Error fetching attendance data:', error);
-      let errorMessage = 'Failed to load attendance data';
-      
-      if (error.response) {
-        errorMessage = `Server error: ${error.response.status} - ${error.response.statusText}`;
-      } else if (error.request) {
-        errorMessage = 'Network error - unable to reach server';
-      } else {
-        errorMessage = error.message;
-      }
-      setError(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  fetchAttendanceData();
-}, []);
-
-// Updated processAttendanceData function
-const processAttendanceData = (attendanceLog) => {
-  const processedData = [];
-  
-  if (!attendanceLog || attendanceLog.length === 0) {
+    });
+    
+    // Sort by timestamp (newest first)
+    processedData.sort((a, b) => b.originalTimestamp - a.originalTimestamp);
+    
     return {
-      entries: [],
-      summary: { presentDays: 0, absentDays: 0, outings: 0 }
-    };
-  }
-  
-  // Sort by timestamp (oldest first for processing)
-  const sortedLog = [...attendanceLog].sort((a, b) => 
-    new Date(a.timestamp) - new Date(b.timestamp)
-  );
-  
-  // Track unique days and outings
-  const uniquePresentDays = new Set();
-  let absentDays = 0;
-  let outings = 0;
-  
-  // Process each entry
-  for (let i = 0; i < sortedLog.length; i++) {
-    const currentEntry = sortedLog[i];
-    const timestamp = new Date(currentEntry.timestamp);
-    
-    // Format for display
-    const dateStr = timestamp.toLocaleDateString('en-GB', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      timeZone: 'Asia/Kolkata'
-    });
-    
-    const timeStr = timestamp.toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true,
-      timeZone: 'Asia/Kolkata'
-    });
-    
-    // Track metrics
-    if (currentEntry.direction === 'IN') {
-      uniquePresentDays.add(timestamp.toDateString());
-    } else if (currentEntry.direction === 'OUT') {
-      outings++;
-      // Check for extended absence
-      const nextEntry = sortedLog[i + 1];
-      if (nextEntry) {
-        const nextTime = new Date(nextEntry.timestamp);
-        const hoursAway = (nextTime - timestamp) / (1000 * 60 * 60);
-        if (hoursAway >= 24) {
-          absentDays += Math.floor(hoursAway / 24);
-        }
+      entries: processedData,
+      summary: {
+        presentDays: uniquePresentDays.size,
+        absentDays: absentDays,
+        outings: outings
       }
-    }
-    
-    // Add entry to display data
-    processedData.push({
-      date: dateStr,
-      time: timeStr,
-      direction: currentEntry.direction,
-      deviceName: currentEntry.deviceName,
-      verificationType: currentEntry.verificationType,
-      employeeCode: currentEntry.employeeCode,
-      status: currentEntry.direction === 'IN' ? 'Present' : 'Out'
-    });
-  }
-  
-  return {
-    entries: processedData.reverse(), // newest first
-    summary: {
-      presentDays: uniquePresentDays.size,
-      absentDays: absentDays,
-      outings: outings
-    }
+    };
   };
-};
 
   // Loading state
   if (loading) {
