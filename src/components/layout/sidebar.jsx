@@ -123,7 +123,7 @@ export default function Sidebar() {
           {/* Navigation Links - full width */}
           <div className="flex-1">
             {[
-              { href: "/Dashboard", icon: "/public/dashboard.png", label: "Dashboard" },
+              { href: "/Dashboard", icon: "/dashboard.png", label: "Dashboard" },
               { href: "/Attendance", icon: "/calender.png", label: "Attendance History" },
               { href: "/Leave", icon: "/leave.png", label: "Leave Management" },
               { href: "/Fees", icon: "/wallet.png", label: "Fees Paid" },
@@ -170,7 +170,7 @@ export default function Sidebar() {
                 onClick={handleLogoutClick}
                 className="flex items-center gap-2 text-[#1a312a] font-semibold text-sm md:text-base hover:text-black transition-colors cursor-pointer"
               >
-                <img src="/logout.svg" alt="Logout" className="w-4 h-4 md:w-5 md:h-5" />
+                <img src="/parent/logout.svg" alt="Logout" className="w-4 h-4 md:w-5 md:h-5" />
                 <span>Logout</span>
               </button>
             </div>
