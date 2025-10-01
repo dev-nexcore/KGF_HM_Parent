@@ -309,7 +309,7 @@ export default function ParentLogin() {
       // Navigate with error handling
       setTimeout(() => {
         try {
-          router.push("/parent/dashboard");
+          router.push("/dashboard");
         } catch (navigationError) {
           console.error("Navigation Error:", navigationError);
           toast.error("Login successful but failed to redirect. Please refresh the page.", {

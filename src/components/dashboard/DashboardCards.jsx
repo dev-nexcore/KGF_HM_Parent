@@ -265,7 +265,7 @@ export default function DashboardCards() {
             </div>
             <h2 className="font-bold text-lg sm:text-2xl text-gray-800">{displayName}</h2>
             <p className="text-sm text-gray-700 font-semibold mb-4">Student ID: {displayStudentId}</p>
-            <Link href="/parent/dashboard/student">
+            <Link href="/dashboard/student">
               <button className="bg-white text-gray-800 font-semibold px-4 py-2 rounded-lg text-sm hover:bg-gray-100">
                 View Details
               </button>
