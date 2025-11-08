@@ -127,7 +127,7 @@ export default function Sidebar() {
               { href: "/Attendance", icon: "/parent/calender.png", label: "Attendance History" },
               { href: "/Leave", icon: "/parent/leave.png", label: "Leave Management" },
               { href: "/Fees", icon: "/parent/wallet.png", label: "Fees Paid" },
-              { href: "/Notices", icon: "/parent/notice.png", label: "Notices" },
+              { href: "/Refunds", icon: "/parent/notice.png", label: "Refunds" },
               { href: "/Makepayment", icon: "/parent/payment.png", label: "Make Payments" },
             ].map(({ href, icon, label }) => {
               const active = isActive(href);
