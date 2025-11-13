@@ -13,6 +13,7 @@ export default function ParentLogin() {
   const [isOtpSent, setIsOtpSent] = useState(false);
   const [isOtpSending, setIsOtpSending] = useState(false);
   const [maskedEmail, setMaskedEmail] = useState("");
+  const [maskedPhone, setMaskedPhone]=useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
   const router = useRouter();
@@ -140,8 +141,9 @@ export default function ParentLogin() {
 
       toast.dismiss('sending-otp');
       setMaskedEmail(response.data.email);
+      setMaskedPhone(response.data.contactNumber);
       setIsOtpSent(true);
-      toast.success(`OTP sent successfully to ${response.data.email}`, {
+      toast.success(`OTP sent successfully to ${response.data.email} and ${response.data.contactNumber} `, {
         duration: 4000,
       });
       
@@ -416,6 +418,7 @@ export default function ParentLogin() {
     setIsOtpSent(false);
     setOtp("");
     setMaskedEmail("");
+    setMaskedPhone("");
     toast.dismiss(); // Clear any existing toasts
   };
 
@@ -629,7 +632,7 @@ export default function ParentLogin() {
               <div className={`space-y-4 ${isOtpSent ? 'animate-fadeInUp' : ''}`}>
                 <div className="w-full p-3 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg text-center shadow-sm transition-all duration-300 hover:shadow-md">
                   <p className="text-sm text-green-700">
-                    OTP sent to: <span className="font-semibold">{maskedEmail}</span>
+                    OTP sent to: <span className="font-semibold">{maskedEmail} and {maskedPhone}</span>
                   </p>
                   <p className="text-xs text-green-600 mt-1">
                     Valid for 5 minutes
@@ -794,7 +797,14 @@ export default function ParentLogin() {
               <div className={`w-full space-y-4 transition-all duration-500 ease-in-out ${
                 isOtpSent ? 'animate-fadeInUp' : ''
               }`}>
-              
+                <div className="w-full p-3 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg text-center shadow-sm transition-all duration-300 hover:shadow-md">
+                  <p className="text-sm text-green-700">
+                    OTP sent to: <span className="font-semibold">{maskedEmail} and {maskedPhone}</span>
+                  </p>
+                  <p className="text-xs text-green-600 mt-1">
+                    Valid for 5 minutes
+                  </p>
+                </div>
 
                 <div className="space-y-2">
                   <label className="text-xl font-semibold text-black w-full text-left block">
