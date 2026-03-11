@@ -705,7 +705,7 @@ export default function ParentLogin() {
           }`}>
             <div className="w-72 h-72 rounded-xl overflow-hidden bg-white shadow-lg hover:scale-110 transition-transform duration-300 ease-in-out">
               <Image 
-                src="/logo2.png"
+                src="/parent/logo2.png"
                 alt="KOKAN Global Foundation Logo" 
                 className="w-full h-full object-cover"
                 width={512}
