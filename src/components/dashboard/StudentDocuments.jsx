@@ -273,12 +273,12 @@ export default function Documents() {
               </div>
               <div className="flex flex-col sm:contents">
                 <p className="text-gray-500">Room Number:</p>
-                <p className="font-bold mb-2 sm:mb-0">{studentData.roomNo}</p>
+                <p className="font-bold mb-2 sm:mb-0">{studentData.room}</p>
               </div>
               <div className="flex flex-col sm:contents">
                 <p className="text-gray-500">Bed Allotment:</p>
                 <p className="font-bold mb-2 sm:mb-0">
-                  {studentData.bedAllotment}
+                  {studentData.bedType}
                 </p>
               </div>
               <div className="flex flex-col sm:contents">
