@@ -5,12 +5,11 @@ import FeesSection from "@/components/FeesPaid/Fees";
 export default function FeesPage() {
   return (
     <div className="flex">
-            <Sidebar />
-            <div className="flex-1 min-h-screen">
-              <Navbar />
-              <FeesSection />
-            </div>
-          </div>
-        )
-      }
-    
+      <Sidebar />
+      <div className="flex-1 min-h-screen overflow-y-auto">
+        <Navbar />
+        <FeesSection />
+      </div>
+    </div>
+  )
+}

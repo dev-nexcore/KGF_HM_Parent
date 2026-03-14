@@ -4,6 +4,7 @@ import { UserIcon } from "@heroicons/react/24/outline";
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import axios from "axios";
+import Image from "next/image";
 
 export default function Documents() {
   const [studentData, setStudentData] = useState({
@@ -74,8 +75,6 @@ export default function Documents() {
 
         const dashboardData = response.data;
         const studentInfo = dashboardData.studentInfo;
-        console.log("Student Details from Dashboard API:", studentInfo);
-
         const firstName = studentInfo.firstName || "";
         const lastName = studentInfo.lastName || "";
 
@@ -88,20 +87,6 @@ export default function Documents() {
             year: "numeric",
           });
         };
-
-        const parseRoomBed = (roomBedNumber) => {
-          if (!roomBedNumber || roomBedNumber === "N/A") {
-            return { roomNo: "N/A", bedAllotment: "N/A" };
-          }
-          if (roomBedNumber.includes("Room")) {
-            const roomMatch = roomBedNumber.match(/Room\s+(\d+)/i);
-            const roomNo = roomMatch ? roomMatch[1] : roomBedNumber;
-            return { roomNo, bedAllotment: roomBedNumber };
-          }
-          return { roomNo: roomBedNumber, bedAllotment: roomBedNumber };
-        };
-
-        const { roomNo, bedAllotment } = parseRoomBed(studentInfo.roomBedNumber);
 
         // ✅ Prefer profileImage or photo from dashboard API
         let profileImageUrl = null;
@@ -117,10 +102,10 @@ export default function Documents() {
           studentId: studentInfo.studentId || studentId,
           email: studentInfo.email || "N/A",
           contactNumber: studentInfo.contactNumber || studentInfo.phone || "N/A",
-          roomNo,
-          bedAllotment,
+          roomNo: response.data.studentInfo.roomBedDetails.room,
+          bedAllotment: response.data.studentInfo.roomBedDetails.bedType,
           lastCheckInDate: formatDate(studentInfo.lastCheckInDate),
-          profileImage: profileImageUrl,
+          profileImage: studentInfo.photo,
           loading: false,
           error: null,
         });
@@ -273,12 +258,12 @@ export default function Documents() {
               </div>
               <div className="flex flex-col sm:contents">
                 <p className="text-gray-500">Room Number:</p>
-                <p className="font-bold mb-2 sm:mb-0">{studentData.room}</p>
+                <p className="font-bold mb-2 sm:mb-0">{studentData.roomNo}</p>
               </div>
               <div className="flex flex-col sm:contents">
                 <p className="text-gray-500">Bed Allotment:</p>
                 <p className="font-bold mb-2 sm:mb-0">
-                  {studentData.bedType}
+                  {studentData.bedAllotment}
                 </p>
               </div>
               <div className="flex flex-col sm:contents">
@@ -290,7 +275,7 @@ export default function Documents() {
               <div className="flex flex-col sm:contents">
                 <p className="text-gray-500">Last Check-in:</p>
                 <p className="font-bold mb-2 sm:mb-0">
-                  05-08-25 
+                  05-08-25
                 </p>
               </div>
             </div>
