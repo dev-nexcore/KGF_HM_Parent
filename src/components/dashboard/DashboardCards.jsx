@@ -307,7 +307,7 @@ export default function DashboardCards() {
             <h3 className="bg-[#9CAD8F] rounded-t-xl px-4 py-3 font-bold text-black">Hostel Details</h3>
             <div className="p-6 space-y-3 flex-1 flex flex-col justify-center">
               <InfoRow label="Status:" value="Allocated" color="text-green-600" />
-              <InfoRow label="Room & Bed:" value={studentData.roomNo} />
+              <InfoRow label="Room & Bed:" value={studentData.bedType} />
               <InfoRow label="Hostel Warden:" value={getWardenNames()} />
             </div>
           </div>
