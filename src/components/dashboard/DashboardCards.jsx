@@ -154,8 +154,8 @@ export default function DashboardCards() {
           firstName,
           lastName,
           studentId: studentInfo.studentId || studentId,
-          roomNo: studentInfo.roomBedNumber || 'N/A',
-          bedAllotment: studentInfo.roomBedNumber || 'N/A',
+          roomNo: studentInfo.roomBedNumber.room || 'N/A',
+          bedAllotment: studentInfo.roomBedNumber.bedType || 'N/A',
           profileImage: profileImageUrl,
           loading: false,
           error: null
