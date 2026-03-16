@@ -15,7 +15,7 @@ export default function DashboardCards() {
     loading: true,
     error: null
   });
-  const [wardenData, setWardenData] = useState({ 
+  const [wardenData, setWardenData] = useState({
     wardens: [],
     loading: true,
     error: null
@@ -82,7 +82,7 @@ export default function DashboardCards() {
 
       const attendanceData = attendanceResponse.data;
       const attendanceSummary = attendanceData.attendanceSummary || {};
-      
+
       setAttendance({
         today: attendanceSummary.isPresentToday ? "Present" : "Absent",
         last7Days: `${attendanceSummary.presentDays || 0}/${attendanceSummary.totalDays || 0} Present`,
@@ -137,6 +137,7 @@ export default function DashboardCards() {
         );
 
         const dashboardData = response.data;
+        console.log("dashboard data", response.data.studentInfo.roomBedDetails.bedType)
         const studentInfo = dashboardData.studentInfo;
 
         const firstName = studentInfo.firstName || '';
@@ -154,8 +155,8 @@ export default function DashboardCards() {
           firstName,
           lastName,
           studentId: studentInfo.studentId || studentId,
-          roomNo: studentInfo.roomBedNumber.room || 'N/A',
-          bedAllotment: studentInfo.roomBedNumber.bedType || 'N/A',
+          roomNo: response.data.studentInfo.roomBedDetails.room || 'N/A',
+          bedAllotment: response.data.studentInfo.roomBedDetails.bedType || 'N/A',
           profileImage: profileImageUrl,
           loading: false,
           error: null
@@ -180,9 +181,9 @@ export default function DashboardCards() {
         setWardenData({
           wardens: wardenInfo.wardenName
             ? [{
-                firstName: wardenInfo.wardenName.split(' ')[0] || '',
-                lastName: wardenInfo.wardenName.split(' ').slice(1).join(' ') || ''
-              }]
+              firstName: wardenInfo.wardenName.split(' ')[0] || '',
+              lastName: wardenInfo.wardenName.split(' ').slice(1).join(' ') || ''
+            }]
             : [],
           loading: false,
           error: null
@@ -226,9 +227,9 @@ export default function DashboardCards() {
     fetchParentDashboardData();
   }, []);
 
-  const displayName = studentData.loading 
-    ? 'Loading...' 
-    : studentData.error 
+  const displayName = studentData.loading
+    ? 'Loading...'
+    : studentData.error
       ? 'Error loading data'
       : `${studentData.firstName} ${studentData.lastName}`.trim() || 'Unknown Student';
 
@@ -254,9 +255,9 @@ export default function DashboardCards() {
           <div className="bg-[#B8C5A8] rounded-xl p-4 sm:p-6 shadow-lg flex flex-col justify-center items-center min-h-[280px]">
             <div className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 rounded-full bg-white mb-4 flex items-center justify-center overflow-hidden">
               {studentData.profileImage ? (
-                <img 
-                  src={studentData.profileImage} 
-                  alt="Student Profile" 
+                <img
+                  src={studentData.profileImage}
+                  alt="Student Profile"
                   className="w-full h-full object-cover rounded-full"
                 />
               ) : (
@@ -280,10 +281,10 @@ export default function DashboardCards() {
               <InfoRow label="Total Fees:" value={feesData.totalAmount !== 'Loading...' ? "₹7000" : feesData.totalAmount} />
               <InfoRow label="Amount Due:" value={feesData.amountDue !== 'Loading...' ? `₹${feesData.amountDue}` : feesData.amountDue} color={feesData.amountDue > 0 ? "text-red-600" : "text-green-600"} />
               <InfoRow
-  label="Paid on:"
-  value={'2025-07-15'}
- 
-/>
+                label="Paid on:"
+                value={'2025-07-15'}
+
+              />
 
               {/* <InfoRow label="Paid on:" value={feesData.dueDate !== "N/A" && feesData.dueDate !== 'Loading...' ? new Date(feesData.dueDate).toLocaleDateString() : feesData.dueDate} color="text-gray-500" /> */}
 
@@ -307,11 +308,11 @@ export default function DashboardCards() {
             <h3 className="bg-[#9CAD8F] rounded-t-xl px-4 py-3 font-bold text-black">Hostel Details</h3>
             <div className="p-6 space-y-3 flex-1 flex flex-col justify-center">
               <InfoRow label="Status:" value="Allocated" color="text-green-600" />
-              <InfoRow label="Room & Bed:" value={studentData.bedType} />
+              <InfoRow label="Room:" value={studentData.bedAllotment} />
+              <InfoRow label="Bed:" value={studentData.roomNo} />
               <InfoRow label="Hostel Warden:" value={getWardenNames()} />
             </div>
           </div>
-
         </div>
       </div>
     </div>
