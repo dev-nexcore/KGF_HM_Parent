@@ -5,6 +5,15 @@ import { User, Camera, Edit2, Save, X, Phone, Mail, Calendar, UserCheck, ShieldC
 import axios from "axios";
 import { toast } from "react-hot-toast";
 
+const getDocumentUrl = (docType) => {
+  return `${process.env.NEXT_PUBLIC_PROD_API_URL}/api/parentauth/student-document/${docType}`;
+};
+
+const hasDocument = (docObj) => {
+  if (!docObj) return false;
+  return !!(docObj.filename || docObj.path || docObj.name);
+};
+
 // ── Theme tokens ─────────────────────────────────────────────────────────────
 const T = {
   bg: "#7A8B5E",
@@ -250,6 +259,45 @@ export default function ProfilePage() {
               <DisplayField label="Official Email" value={studentInfo.email} icon={<Mail size={16}/>} />
               <DisplayField label="Emergency Contact" value={studentInfo.emergencyContactNumber} icon={<Phone size={16}/>} />
             </div>
+          </section>
+
+          {/* Student Documents Section */}
+          <section className="bg-white rounded-[32px] p-8 shadow-sm border border-[#7A8B5E]/10">
+            <div className="flex items-center gap-3 mb-8">
+              <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
+                <ShieldCheck size={20} />
+              </div>
+              <h3 className="text-xl font-black text-[#1A1F16]">Student Compliance Documents</h3>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {[
+                { label: "Aadhar Card", key: "aadharCard" },
+                { label: "PAN Card", key: "panCard" },
+                { label: "Student ID Card", key: "studentIdCard" },
+                { label: "Fees Receipt", key: "feesReceipt" }
+              ].map((doc) => (
+                <div key={doc.key} className="p-4 rounded-2xl bg-[#F8FAF5] border border-[#7A8B5E]/5">
+                  <p className="text-xs font-bold text-[#6B7280] uppercase tracking-widest mb-2">{doc.label}</p>
+                  {hasDocument(studentInfo.documents?.[doc.key]) ? (
+                    <button
+                      onClick={() => {
+                        const token = localStorage.getItem('parentToken');
+                        window.open(`${getDocumentUrl(doc.key)}?token=${token}`, '_blank');
+                      }}
+                      className="w-full py-3 rounded-xl bg-[#7A8B5E] text-white font-black text-[10px] uppercase tracking-widest hover:bg-[#5A6E3A] transition-all"
+                    >
+                      View Document
+                    </button>
+                  ) : (
+                    <p className="text-xs font-bold text-[#9CAD8F] italic uppercase">Not uploaded</p>
+                  )}
+                </div>
+              ))}
+            </div>
+            <p className="mt-4 text-[10px] font-bold text-[#6B7280] uppercase tracking-wider text-center">
+              Note: Documents are securely stored and only accessible by authorized parents.
+            </p>
           </section>
 
           {/* Account Activity */}
