@@ -2,17 +2,21 @@
 
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import { Calendar, Clock, MapPin, CheckCircle, ArrowUpRight, ArrowDownLeft, Filter, Download } from "lucide-react";
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
 
-const statusColors = {
-  Present: "bg-green-500 text-white",
-  "Day Trip": "bg-[#4F8DCF] text-white",
-  "Extended Away": "bg-orange-500 text-white",
-  "Currently Away": "bg-red-500 text-white",
-  Out: "bg-red-500 text-white",
+const statusStyles = {
+  Present: "bg-green-50 text-green-600 border-green-100",
+  "Day Trip": "bg-blue-50 text-blue-600 border-blue-100",
+  "Extended Away": "bg-amber-50 text-amber-600 border-amber-100",
+  "Currently Away": "bg-red-50 text-red-600 border-red-100",
+  Out: "bg-red-50 text-red-600 border-red-100",
 };
 
 export default function AttendancePage() {
   const [attendanceData, setAttendanceData] = useState([]);
+  const [filteredData, setFilteredData] = useState([]);
   const [summaryStats, setSummaryStats] = useState({
     presentDays: 0,
     absentDays: 0,
@@ -20,61 +24,32 @@ export default function AttendancePage() {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterMonth, setFilterMonth] = useState("all");
 
   useEffect(() => {
     const fetchAttendanceData = async () => {
       try {
         setLoading(true);
-        
-        // Get student ID from parent token
         const parentToken = localStorage.getItem('parentToken');
-        if (!parentToken) {
-          throw new Error('Parent token not found');
-        }
+        if (!parentToken) throw new Error('Parent token not found');
 
         const tokenPayload = JSON.parse(atob(parentToken.split('.')[1]));
         const studentId = tokenPayload.studentId;
-        if (!studentId) {
-          throw new Error('Student ID not found in token');
-        }
 
-        // Fetch attendance log using axios
         const response = await axios.get(
           `${process.env.NEXT_PUBLIC_PROD_API_URL}/api/studentauth/attendance-log/${studentId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${parentToken}`,
-              'Content-Type': 'application/json'
-            }
-          }
+          { headers: { Authorization: `Bearer ${parentToken}` } }
         );
 
-        console.log('Raw API Response:', response.data);
-
-        // Extract attendanceLog from response
         const attendanceLog = response.data?.attendanceLog || [];
-        
-        if (!Array.isArray(attendanceLog)) {
-          throw new Error('Invalid attendance data format');
-        }
-
-        // Process and format the attendance data
         const result = processAttendanceData(attendanceLog);
         setAttendanceData(result.entries);
+        setFilteredData(result.entries);
         setSummaryStats(result.summary);
 
       } catch (error) {
-        console.error('Error fetching attendance data:', error);
-        let errorMessage = 'Failed to load attendance data';
-        
-        if (error.response) {
-          errorMessage = `Server error: ${error.response.status} - ${error.response.statusText}`;
-        } else if (error.request) {
-          errorMessage = 'Network error - unable to reach server';
-        } else {
-          errorMessage = error.message;
-        }
-        setError(errorMessage);
+        setError(error.message);
       } finally {
         setLoading(false);
       }
@@ -83,324 +58,233 @@ export default function AttendancePage() {
     fetchAttendanceData();
   }, []);
 
-  // Updated processAttendanceData function for actual API format
+  useEffect(() => {
+    let result = attendanceData;
+
+    if (searchTerm) {
+      result = result.filter(entry => 
+        entry.date.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        entry.status.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        entry.direction.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    if (filterMonth !== "all") {
+      result = result.filter(entry => {
+        const entryMonth = new Date(entry.originalTimestamp).getMonth().toString();
+        return entryMonth === filterMonth;
+      });
+    }
+
+    setFilteredData(result);
+  }, [searchTerm, filterMonth, attendanceData]);
+
+  const exportToPDF = () => {
+    const doc = new jsPDF();
+    doc.setFontSize(20);
+    doc.text("Attendance History Report", 14, 22);
+    doc.setFontSize(11);
+    doc.setTextColor(100);
+    doc.text(`Generated on: ${new Date().toLocaleString()}`, 14, 30);
+
+    const tableColumn = ["Date", "Time", "Direction", "Status"];
+    const tableRows = filteredData.map(entry => [
+      entry.date,
+      entry.time,
+      `Check ${entry.direction}`,
+      entry.status
+    ]);
+
+    autoTable(doc, {
+      head: [tableColumn],
+      body: tableRows,
+      startY: 40,
+      theme: 'grid',
+      headStyles: { fillColor: [122, 139, 94] },
+    });
+
+    doc.save(`Attendance_Report_${new Date().toISOString().split('T')[0]}.pdf`);
+  };
+
+  const exportToCSV = () => {
+    const headers = ["Date", "Time", "Direction", "Status"];
+    const rows = filteredData.map(entry => [
+      entry.date,
+      entry.time,
+      entry.direction,
+      entry.status
+    ]);
+
+    const csvContent = "data:text/csv;charset=utf-8," 
+      + headers.join(",") + "\n"
+      + rows.map(e => e.join(",")).join("\n");
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `Attendance_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const processAttendanceData = (attendanceLog) => {
     const processedData = [];
-    
-    if (!attendanceLog || attendanceLog.length === 0) {
-      return {
-        entries: [],
-        summary: { presentDays: 0, absentDays: 0, outings: 0 }
-      };
-    }
-    
-    // Track unique days and outings
     const uniquePresentDays = new Set();
     let absentDays = 0;
     let outings = 0;
     
-    // Process each attendance log entry
     attendanceLog.forEach((entry) => {
-      // Process check-in
       if (entry.checkInDate) {
         const checkInTime = new Date(entry.checkInDate);
-        
-        const dateStr = checkInTime.toLocaleDateString('en-GB', {
-          day: '2-digit',
-          month: '2-digit',
-          year: 'numeric',
-          timeZone: 'Asia/Kolkata'
-        });
-        
-        const timeStr = checkInTime.toLocaleTimeString('en-US', {
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: true,
-          timeZone: 'Asia/Kolkata'
-        });
-        
         uniquePresentDays.add(checkInTime.toDateString());
-        
         processedData.push({
-          date: dateStr,
-          time: timeStr,
+          date: checkInTime.toLocaleDateString('en-GB'),
+          time: checkInTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }),
           direction: 'IN',
-          deviceName: 'Student App',
-          verificationType: 'Selfie',
-          employeeCode: entry.studentId || 'N/A',
           status: 'Present',
           originalTimestamp: checkInTime
         });
       }
-      
-      // Process check-out
       if (entry.checkOutDate) {
         const checkOutTime = new Date(entry.checkOutDate);
-        
-        const dateStr = checkOutTime.toLocaleDateString('en-GB', {
-          day: '2-digit',
-          month: '2-digit',
-          year: 'numeric',
-          timeZone: 'Asia/Kolkata'
-        });
-        
-        const timeStr = checkOutTime.toLocaleTimeString('en-US', {
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: true,
-          timeZone: 'Asia/Kolkata'
-        });
-        
         outings++;
-        
-        // Calculate hours away if both check-in and check-out exist
-        if (entry.checkInDate) {
-          const checkInTime = new Date(entry.checkInDate);
-          const hoursAway = (checkOutTime - checkInTime) / (1000 * 60 * 60);
-          if (hoursAway >= 24) {
-            absentDays += Math.floor(hoursAway / 24);
-          }
-        }
-        
         processedData.push({
-          date: dateStr,
-          time: timeStr,
+          date: checkOutTime.toLocaleDateString('en-GB'),
+          time: checkOutTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }),
           direction: 'OUT',
-          deviceName: 'Student App',
-          verificationType: 'Selfie',
-          employeeCode: entry.studentId || 'N/A',
           status: 'Out',
           originalTimestamp: checkOutTime
         });
       }
     });
     
-    // Sort by timestamp (newest first)
     processedData.sort((a, b) => b.originalTimestamp - a.originalTimestamp);
     
     return {
       entries: processedData,
-      summary: {
-        presentDays: uniquePresentDays.size,
-        absentDays: absentDays,
-        outings: outings
-      }
+      summary: { presentDays: uniquePresentDays.size, absentDays, outings }
     };
   };
 
-  // Loading state
-  if (loading) {
-    return (
-      <div className="space-y-6 p-2 sm:p-4 lg:p-6">
-        <div className="flex items-center ml-2 mb-4 sm:mb-6">
-          <div className="w-1 h-6 sm:h-7 bg-[#4F8DCF] mr-2 sm:mr-3"></div>
-          <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold">Attendance History</h2>
-        </div>
-        
-        <div className="w-full bg-white rounded-2xl shadow-inner border border-gray-100 p-8 flex items-center justify-center min-h-[400px]">
-          <div className="flex flex-col items-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
-            <p className="text-gray-600">Loading attendance data...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Error state
-  if (error) {
-    return (
-      <div className="space-y-6 p-2 sm:p-4 lg:p-6">
-        <div className="flex items-center ml-2 mb-4 sm:mb-6">
-          <div className="w-1 h-6 sm:h-7 bg-[#4F8DCF] mr-2 sm:mr-3"></div>
-          <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold">Attendance History</h2>
-        </div>
-        
-        <div className="w-full bg-white rounded-2xl shadow-inner border border-gray-100 p-8 flex items-center justify-center min-h-[400px]">
-          <div className="text-center">
-            <div className="text-red-600 text-lg font-semibold mb-2">Error Loading Data</div>
-            <p className="text-gray-600">{error}</p>
-            <button 
-              onClick={() => window.location.reload()} 
-              className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-            >
-              Retry
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // No data state
-  if (attendanceData.length === 0) {
-    return (
-      <div className="space-y-6 p-2 sm:p-4 lg:p-6">
-        <div className="flex items-center ml-2 mb-4 sm:mb-6">
-          <div className="w-1 h-6 sm:h-7 bg-[#4F8DCF] mr-2 sm:mr-3"></div>
-          <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold">Attendance History</h2>
-        </div>
-        
-        <div className="w-full bg-white rounded-2xl shadow-inner border border-gray-100 p-8 flex items-center justify-center min-h-[400px]">
-          <div className="text-center">
-            <div className="text-gray-600 text-lg font-semibold mb-2">No Attendance Records Found</div>
-            <p className="text-gray-500">No attendance data available for this student.</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  if (loading) return (
+    <div className="min-h-screen bg-[#F8FAF5] flex items-center justify-center">
+      <div className="animate-spin rounded-full h-12 w-12 border-4 border-[#7A8B5E] border-t-transparent"></div>
+    </div>
+  );
 
   return (
-    <div className="space-y-6 p-2 sm:p-4 lg:p-6">
-      {/* Header */}
-      <div className="flex items-center ml-2 mb-4 sm:mb-6">
-        <div className="w-1 h-6 sm:h-7 bg-[#4F8DCF] mr-2 sm:mr-3"></div>
-        <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold">Attendance History</h2>
+    <div className="min-h-screen bg-[#F8FAF5] p-4 sm:p-6 lg:p-8 space-y-8 font-sans">
+      
+      {/* ── Page Header ── */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
+        <div className="flex items-center gap-3">
+          <div className="w-1.5 h-8 bg-[#7A8B5E] rounded-full"></div>
+          <h2 className="text-2xl font-black text-[#1A1F16]">Attendance Activity</h2>
+        </div>
+        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+          <div className="relative group flex-1 sm:w-64">
+            <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#7A8B5E]" size={14} />
+            <input 
+              type="text"
+              placeholder="Search date, type..."
+              className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-white border border-[#7A8B5E]/10 focus:border-[#7A8B5E] outline-none text-xs font-bold transition-all"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <select 
+            className="px-4 py-2.5 rounded-xl bg-white border border-[#7A8B5E]/10 text-xs font-black uppercase tracking-widest text-[#7A8B5E] outline-none"
+            value={filterMonth}
+            onChange={(e) => setFilterMonth(e.target.value)}
+          >
+            <option value="all">All Months</option>
+            {["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"].map((m, i) => (
+              <option key={i} value={i.toString()}>{m}</option>
+            ))}
+          </select>
+          <button 
+            onClick={exportToPDF}
+            className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl bg-[#7A8B5E] text-white text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg shadow-[#7A8B5E]/20 hover:bg-[#5A6E3A] transition-all"
+          >
+            <Download size={14} /> Export PDF
+          </button>
+        </div>
       </div>
 
-      {/* Enhanced Summary Statistics */}
-      <div className="mb-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-          <div className="text-green-800 font-semibold">Present Days</div>
-          <div className="text-2xl font-bold text-green-600">
-            {summaryStats.presentDays}
-          </div>
-          <div className="text-xs text-green-600 mt-1">
-            Unique calendar days
-          </div>
-        </div>
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <div className="text-red-800 font-semibold">Days Away</div>
-          <div className="text-2xl font-bold text-red-600">
-            {summaryStats.absentDays}
-          </div>
-          <div className="text-xs text-red-600 mt-1">
-            24+ hours away
-          </div>
-        </div>
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <div className="text-blue-800 font-semibold">Total Outings</div>
-          <div className="text-2xl font-bold text-blue-600">
-            {summaryStats.outings}
-          </div>
-          <div className="text-xs text-blue-600 mt-1">
-            Times checked out
-          </div>
-        </div>
+      {/* ── Summary Stats ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+        <StatCard label="Present Days" value={summaryStats.presentDays} icon={<CheckCircle size={24}/>} color="text-green-600" bgColor="bg-green-50" />
+        <StatCard label="Total Outings" value={summaryStats.outings} icon={<ArrowUpRight size={24}/>} color="text-blue-600" bgColor="bg-blue-50" />
+        <StatCard label="Overall Status" value="Active" icon={<MapPin size={24}/>} color="text-amber-600" bgColor="bg-amber-50" />
       </div>
 
-      {/* Last Device Info */}
-      {attendanceData.length > 0 && (
-        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
-          <h3 className="text-sm font-semibold text-gray-700 mb-2">Last Entry Details</h3>
-          <div className="grid grid-cols-2 gap-4 text-sm">
-            <div>
-              <span className="text-gray-600">Device:</span>{' '}
-              <span className="font-medium">{attendanceData[0].deviceName}</span>
-            </div>
-            <div>
-              <span className="text-gray-600">Verification:</span>{' '}
-              <span className="font-medium">{attendanceData[0].verificationType}</span>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Main White Container */}
-      <div className="w-full bg-white rounded-2xl shadow-inner border border-gray-100 overflow-hidden" style={{ boxShadow: 'inset 0 4px 10px rgba(0, 0, 0, 0.1)' }}>
-        <div className="w-full flex flex-col items-center p-4 md:p-5 pb-4">
-          
-          {/* Mobile View */}
-          <div className="md:hidden w-full max-w-xs sm:max-w-sm">
-            <div className="p-3 sm:p-5 mb-3 rounded" style={{ backgroundColor: '#D9D9D9' }}>
-              <div className="grid grid-cols-4 gap-2 sm:gap-3 text-sm sm:text-base font-bold text-gray-800">
-                <div className="text-center">Date</div>
-                <div className="text-center">Time</div>
-                <div className="text-center">Type</div>
-                <div className="text-center">Status</div>
-              </div>
-            </div>
-
-            <div className="space-y-2 sm:space-y-3 mb-0">
-              {attendanceData.map((row, i) => (
-                <div
-                  key={i}
-                  className={`bg-white border border-gray-200 p-3 sm:p-5 rounded ${i === attendanceData.length - 1 ? 'mb-0' : ''}`}
-                >
-                  <div className="grid grid-cols-4 gap-2 sm:gap-3 text-xs sm:text-sm">
-                    <div className="text-center font-bold text-gray-800 py-1">{row.date}</div>
-                    <div className="text-center font-bold text-gray-600 py-1">{row.time}</div>
-                    <div className="text-center font-bold text-gray-600 py-1">{row.direction}</div>
-                    <div className="text-center py-1">
-                      <span
-                        className={`inline-flex items-center justify-center px-1 sm:px-2 py-1 text-xs font-semibold rounded-sm ${statusColors[row.status]}`}
-                      >
-                        {row.status}
-                      </span>
+      {/* ── Table Container ── */}
+      <div className="bg-white rounded-[32px] shadow-sm border border-[#7A8B5E]/10 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="bg-[#F8FAF5]/50 border-b border-[#7A8B5E]/5">
+                <th className="px-8 py-5 text-left text-[10px] font-black text-[#6B7280] uppercase tracking-[0.2em]">Timestamp</th>
+                <th className="px-8 py-5 text-left text-[10px] font-black text-[#6B7280] uppercase tracking-[0.2em]">Type</th>
+                <th className="px-8 py-5 text-left text-[10px] font-black text-[#6B7280] uppercase tracking-[0.2em]">Verification</th>
+                <th className="px-8 py-5 text-left text-[10px] font-black text-[#6B7280] uppercase tracking-[0.2em]">Status</th>
+                <th className="px-8 py-5 text-right text-[10px] font-black text-[#6B7280] uppercase tracking-[0.2em]">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#7A8B5E]/5">
+              {filteredData.map((row, i) => (
+                <tr key={i} className="hover:bg-[#F8FAF5]/30 transition-all">
+                  <td className="px-8 py-5">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center text-[#7A8B5E]">
+                        <Calendar size={18} />
+                      </div>
+                      <div>
+                        <p className="text-sm font-black text-[#1A1F16]">{row.date}</p>
+                        <p className="text-[10px] font-bold text-[#6B7280] flex items-center gap-1 uppercase">
+                          <Clock size={10} /> {row.time}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                </div>
+                  </td>
+                  <td className="px-8 py-5">
+                    <span className={`inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest ${row.direction === 'IN' ? 'text-green-600' : 'text-amber-600'}`}>
+                      {row.direction === 'IN' ? <ArrowDownLeft size={12}/> : <ArrowUpRight size={12}/>}
+                      Check {row.direction}
+                    </span>
+                  </td>
+                  <td className="px-8 py-5">
+                    <span className="text-xs font-bold text-[#6B7280] uppercase tracking-tighter">Biometric / Selfie</span>
+                  </td>
+                  <td className="px-8 py-5">
+                    <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${statusStyles[row.status]}`}>
+                      {row.status}
+                    </span>
+                  </td>
+                  <td className="px-8 py-5 text-right">
+                    <button className="text-[10px] font-black text-[#7A8B5E] hover:underline uppercase tracking-widest">Details</button>
+                  </td>
+                </tr>
               ))}
-            </div>
-          </div>
-
-          {/* Desktop Table */}
-          <div className="hidden md:block w-full max-w-none lg:max-w-6xl xl:max-w-7xl">
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[600px]">
-                <thead>
-                  <tr style={{ backgroundColor: '#D9D9D9' }}>
-                    <th className="py-3 md:py-4 px-4 md:px-6 font-bold text-gray-800 text-center text-base md:text-lg">
-                      Date
-                    </th>
-                    <th className="py-3 md:py-4 px-4 md:px-6 font-bold text-gray-800 text-center text-base md:text-lg">
-                      Time
-                    </th>
-                    <th className="py-3 md:py-4 px-4 md:px-6 font-bold text-gray-800 text-center text-base md:text-lg">
-                      Type
-                    </th>
-                    <th className="py-3 md:py-4 px-4 md:px-6 font-bold text-gray-800 text-center text-base md:text-lg">
-                      Device
-                    </th>
-                    <th className="py-3 md:py-4 px-4 md:px-6 font-bold text-gray-800 text-center text-base md:text-lg">
-                      Status
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {attendanceData.map((row, i) => (
-                    <tr
-                      key={i}
-                      className="hover:bg-gray-50 transition-colors"
-                    >
-                      <td className="py-3 md:py-4 px-4 md:px-6 font-bold text-gray-700 text-center text-sm md:text-base">
-                        {row.date}
-                      </td>
-                      <td className="py-3 md:py-4 px-4 md:px-6 font-bold text-gray-700 text-center text-sm md:text-base">
-                        {row.time}
-                      </td>
-                      <td className="py-3 md:py-4 px-4 md:px-6 font-bold text-gray-700 text-center text-sm md:text-base">
-                        {row.direction}
-                      </td>
-                      <td className="py-3 md:py-4 px-4 md:px-6 font-bold text-gray-700 text-center text-sm md:text-base">
-                        {row.deviceName}
-                      </td>
-                      <td className="py-3 md:py-4 px-4 md:px-6 text-center">
-                        <span
-                          className={`inline-flex items-center justify-center min-w-[90px] md:min-w-[110px] lg:min-w-[120px] px-3 md:px-4 py-1 md:py-2 font-semibold text-xs md:text-sm rounded-sm ${statusColors[row.status]}`}
-                        >
-                          {row.status}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
   );
 }
+
+function StatCard({ label, value, icon, color, bgColor }) {
+  return (
+    <div className="bg-white p-6 rounded-[32px] border border-[#7A8B5E]/5 shadow-sm flex items-center gap-5">
+      <div className={`w-14 h-14 rounded-2xl ${bgColor} flex items-center justify-center shrink-0 ${color}`}>
+        {icon}
+      </div>
+      <div>
+        <p className="text-[10px] font-bold text-[#6B7280] uppercase tracking-widest">{label}</p>
+        <p className={`text-2xl font-black ${color} mt-1`}>{value}</p>
+      </div>
+    </div>
+  );
+}

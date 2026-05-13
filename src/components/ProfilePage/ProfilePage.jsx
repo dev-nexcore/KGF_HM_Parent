@@ -1,9 +1,25 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { User, Camera, Edit2, Save, X, Phone, Mail, Calendar, UserCheck } from "lucide-react";
+import { User, Camera, Edit2, Save, X, Phone, Mail, Calendar, UserCheck, ShieldCheck, MapPin, BadgeCheck, Clock } from "lucide-react";
 import axios from "axios";
 import { toast } from "react-hot-toast";
+
+// ── Theme tokens ─────────────────────────────────────────────────────────────
+const T = {
+  bg: "#7A8B5E",
+  bgLight: "#F8FAF5",
+  accent: "#7A8B5E",
+  accentDark: "#5A6E3A",
+  accentLight: "#E8EDDF",
+  gold: "#C5A059",
+  goldLight: "#F4EDE1",
+  text: "#1A1F16",
+  textMuted: "#6B7280",
+  border: "rgba(122,139,94,0.15)",
+  glass: "rgba(255, 255, 255, 0.9)",
+  shadow: "rgba(40, 50, 30, 0.08)",
+};
 
 export default function ProfilePage() {
   const [profileData, setProfileData] = useState(null);
@@ -13,17 +29,6 @@ export default function ProfilePage() {
   const [uploading, setUploading] = useState(false);
   const [editedData, setEditedData] = useState({});
 
-  const updateLocalStorageAndNotify = (key, value) => {
-  if (value) {
-    localStorage.setItem(key, value);
-  } else {
-    localStorage.removeItem(key);
-  }
-  // Dispatch custom event to notify other components
-  window.dispatchEvent(new Event('localStorageUpdate'));
-};
-
-  // Load profile data on component mount
   useEffect(() => {
     fetchProfileData();
   }, []);
@@ -32,19 +37,11 @@ export default function ProfilePage() {
     try {
       setLoading(true);
       const parentToken = localStorage.getItem('parentToken');
-      
-      if (!parentToken) {
-        throw new Error('No authentication token found');
-      }
+      if (!parentToken) throw new Error('No authentication token found');
 
       const response = await axios.get(
         `${process.env.NEXT_PUBLIC_PROD_API_URL}/api/parentauth/profile`,
-        {
-          headers: {
-            Authorization: `Bearer ${parentToken}`,
-            'Content-Type': 'application/json'
-          }
-        }
+        { headers: { Authorization: `Bearer ${parentToken}` } }
       );
 
       setProfileData(response.data.profile);
@@ -53,16 +50,9 @@ export default function ProfilePage() {
         lastName: response.data.profile.parentInfo.lastName,
         contactNumber: response.data.profile.parentInfo.contactNumber
       });
-
     } catch (err) {
       console.error('Error fetching profile:', err);
       setError(err.response?.data?.message || 'Failed to load profile data');
-      if (err.response?.status === 401) {
-        // Token expired, redirect to login
-        localStorage.removeItem('parentToken');
-        localStorage.removeItem('parentInfo');
-        window.location.href = '/';
-      }
     } finally {
       setLoading(false);
     }
@@ -72,22 +62,9 @@ export default function ProfilePage() {
     const file = event.target.files[0];
     if (!file) return;
 
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      toast.error('Please select a valid image file');
-      return;
-    }
-
-    // Validate file size (5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('Image size should be less than 5MB');
-      return;
-    }
-
     try {
       setUploading(true);
       const parentToken = localStorage.getItem('parentToken');
-      
       const formData = new FormData();
       formData.append('profileImage', file);
 
@@ -102,27 +79,13 @@ export default function ProfilePage() {
         }
       );
 
-      // Update profile data with new image
       setProfileData(prev => ({
         ...prev,
-        parentInfo: {
-          ...prev.parentInfo,
-          profileImage: response.data.profileImage
-        }
+        parentInfo: { ...prev.parentInfo, profileImage: response.data.profileImage }
       }));
-
-      // Store image in localStorage for immediate use
-      const reader = new FileReader();
-      reader.onload = (e) => {
-updateLocalStorageAndNotify('parentProfileImage', e.target.result);
-      };
-      reader.readAsDataURL(file);
-
-      toast.success('Profile image updated successfully!');
-
+      toast.success('Profile image updated!');
     } catch (err) {
-      console.error('Error uploading image:', err);
-      toast.error(err.response?.data?.message || 'Failed to upload image');
+      toast.error('Failed to upload image');
     } finally {
       setUploading(false);
     }
@@ -131,423 +94,220 @@ updateLocalStorageAndNotify('parentProfileImage', e.target.result);
   const handleSaveProfile = async () => {
     try {
       const parentToken = localStorage.getItem('parentToken');
-      
-      const response = await axios.put(
+      await axios.put(
         `${process.env.NEXT_PUBLIC_PROD_API_URL}/api/parentauth/profile`,
         editedData,
-        {
-          headers: {
-            Authorization: `Bearer ${parentToken}`,
-            'Content-Type': 'application/json'
-          }
-        }
+        { headers: { Authorization: `Bearer ${parentToken}` } }
       );
 
-      // Update profile data
       setProfileData(prev => ({
         ...prev,
-        parentInfo: {
-          ...prev.parentInfo,
-          ...editedData
-        }
+        parentInfo: { ...prev.parentInfo, ...editedData }
       }));
-
-      // Update localStorage
-      const parentInfo = JSON.parse(localStorage.getItem('parentInfo') || '{}');
-      const updatedParentInfo = {
-        ...parentInfo,
-        firstName: editedData.firstName,
-        lastName: editedData.lastName,
-        contactNumber: editedData.contactNumber
-      };
-     updateLocalStorageAndNotify('parentInfo', JSON.stringify(updatedParentInfo));
       setIsEditing(false);
       toast.success('Profile updated successfully!');
-
     } catch (err) {
-      console.error('Error updating profile:', err);
-      toast.error(err.response?.data?.message || 'Failed to update profile');
+      toast.error('Failed to update profile');
     }
   };
 
-  const handleRemoveImage = async () => {
-    try {
-      const parentToken = localStorage.getItem('parentToken');
-      
-      await axios.delete(
-        `${process.env.NEXT_PUBLIC_PROD_API_URL}/api/parentauth/profile/image`,
-        {
-          headers: {
-            Authorization: `Bearer ${parentToken}`
-          }
-        }
-      );
-
-      // Update profile data
-      setProfileData(prev => ({
-        ...prev,
-        parentInfo: {
-          ...prev.parentInfo,
-          profileImage: null
-        }
-      }));
-
-      // Remove from localStorage
-     updateLocalStorageAndNotify('parentProfileImage', null);
-
-      toast.success('Profile image removed successfully!');
-
-    } catch (err) {
-      console.error('Error removing image:', err);
-      toast.error(err.response?.data?.message || 'Failed to remove image');
-    }
-  };
-
-  const getProfileImageSrc = () => {
-    if (profileData?.parentInfo?.profileImage) {
-      return `${process.env.NEXT_PUBLIC_PROD_API_URL}/${profileData.parentInfo.profileImage}`;
-    }
-    // Check localStorage for uploaded image
-    const localImage = localStorage.getItem('parentProfileImage');
-    return localImage || null;
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="flex flex-col items-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#A4B494] mb-4"></div>
-          <p className="text-gray-600">Loading profile...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-red-600 text-lg font-semibold mb-2">Error Loading Profile</div>
-          <p className="text-gray-600 mb-4">{error}</p>
-          <button 
-            onClick={fetchProfileData} 
-            className="px-4 py-2 bg-[#A4B494] text-white rounded-lg hover:bg-[#8DA087] transition-colors"
-          >
-            Retry
-          </button>
-        </div>
-      </div>
-    );
-  }
+  if (loading) return (
+    <div className="min-h-screen bg-[#F8FAF5] flex items-center justify-center">
+      <div className="animate-spin rounded-full h-12 w-12 border-4 border-[#7A8B5E] border-t-transparent"></div>
+    </div>
+  );
 
   const { parentInfo, studentInfo } = profileData;
+  const profileImg = parentInfo.profileImage ? `${process.env.NEXT_PUBLIC_PROD_API_URL}/${parentInfo.profileImage}` : null;
 
   return (
-    <div className="space-y-6 p-2 sm:p-4 lg:p-6">
-      {/* Header - Matching fees page layout */}
-      <div className="flex items-center ml-2 mb-4 sm:mb-6">
-        <div className="w-1 h-6 sm:h-7 bg-[#4F8DCF] mr-2 sm:mr-3"></div>
-        <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold">Profile</h2>
+    <div className="min-h-screen bg-[#F8FAF5] p-4 sm:p-6 lg:p-8 space-y-8 font-sans">
+      
+      {/* ── Page Header ── */}
+      <div className="flex items-center gap-3">
+        <div className="w-1.5 h-8 bg-[#7A8B5E] rounded-full"></div>
+        <h2 className="text-2xl font-black text-[#1A1F16]">Account Settings</h2>
       </div>
 
-      {/* Main Profile Card - Matching fees page container */}
-      <div className="w-full bg-white rounded-2xl shadow-inner border border-gray-100 overflow-hidden" style={{ boxShadow: 'inset 0 4px 10px rgba(0, 0, 0, 0.1)' }}>
-        {/* Profile Header Section */}
-        <div className="bg-gradient-to-r from-[#A4B494] to-[#BEC5AD] p-6 md:p-8">
-          <div className="flex flex-col md:flex-row items-center gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        {/* ── Left Column: Profile Card ── */}
+        <div className="lg:col-span-1 space-y-6">
+          <div className="bg-white rounded-[32px] p-8 shadow-sm border border-[#7A8B5E]/10 text-center relative overflow-hidden group">
+            <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-br from-[#7A8B5E] to-[#5A6E3A]"></div>
             
-            {/* Profile Image */}
-            <div className="relative group">
-              <div className="w-32 h-32 md:w-40 md:h-40 rounded-full bg-white border-4 border-white shadow-lg overflow-hidden">
-                {getProfileImageSrc() ? (
-                  <img 
-                    src={getProfileImageSrc()} 
-                    alt="Profile" 
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-gray-100">
-                    <User className="w-16 h-16 md:w-20 md:h-20 text-gray-400" />
-                  </div>
-                )}
+            <div className="relative mt-12 mb-6">
+              <div className="w-32 h-32 mx-auto rounded-[40px] bg-white p-1.5 shadow-xl">
+                <div className="w-full h-full rounded-[35px] bg-[#E8EDDF] overflow-hidden flex items-center justify-center relative group/img">
+                  {profileImg ? (
+                    <img src={profileImg} alt="Profile" className="w-full h-full object-cover" />
+                  ) : (
+                    <User size={48} className="text-[#7A8B5E]" />
+                  )}
+                  <label className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition-opacity cursor-pointer">
+                    <Camera className="text-white" />
+                    <input type="file" className="hidden" onChange={handleImageUpload} />
+                  </label>
+                </div>
               </div>
-              
-              {/* Image Upload Overlay */}
-              <div className="absolute inset-0 rounded-full bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                <label className="cursor-pointer">
-                  <Camera className="w-8 h-8 text-white" />
-                  <input 
-                    type="file" 
-                    accept="image/*" 
-                    onChange={handleImageUpload}
-                    className="hidden"
-                    disabled={uploading}
-                  />
-                </label>
-              </div>
-              
-              {/* Upload Progress */}
               {uploading && (
-                <div className="absolute inset-0 rounded-full bg-black bg-opacity-75 flex items-center justify-center">
-                  <div className="animate-spin rounded-full h-8 w-8 border-2 border-white border-t-transparent"></div>
-                </div>
-              )}
-
-              {/* Remove Image Button */}
-              {getProfileImageSrc() && (
-                <button
-                  onClick={handleRemoveImage}
-                  className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-2 hover:bg-red-600 transition-colors"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              )}
-            </div>
-
-            {/* Profile Info */}
-            <div className="text-center md:text-left text-white">
-              <h2 className="text-2xl md:text-3xl font-bold mb-2">
-                {parentInfo.firstName} {parentInfo.lastName}
-              </h2>
-              <p className="text-lg opacity-90 mb-1">Parent</p>
-              <p className="text-sm opacity-75">Student ID: {parentInfo.studentId}</p>
-              <p className="text-sm opacity-75">
-                Member since {new Date(parentInfo.createdAt).toLocaleDateString('en-GB', {
-                  month: 'long',
-                  year: 'numeric'
-                })}
-              </p>
-            </div>
-
-            {/* Edit Button */}
-            <div className="md:ml-auto">
-              {!isEditing ? (
-                <button
-                  onClick={() => setIsEditing(true)}
-                  className="bg-white text-[#A4B494] px-6 py-2 rounded-lg font-semibold flex items-center gap-2 hover:bg-gray-50 transition-colors"
-                >
-                  <Edit2 className="w-4 h-4" />
-                  Edit Profile
-                </button>
-              ) : (
-                <div className="flex gap-2">
-                  <button
-                    onClick={handleSaveProfile}
-                    className="bg-green-600 text-white px-4 py-2 rounded-lg font-semibold flex items-center gap-2 hover:bg-green-700 transition-colors"
-                  >
-                    <Save className="w-4 h-4" />
-                    Save
-                  </button>
-                  <button
-                    onClick={() => {
-                      setIsEditing(false);
-                      setEditedData({
-                        firstName: parentInfo.firstName,
-                        lastName: parentInfo.lastName,
-                        contactNumber: parentInfo.contactNumber
-                      });
-                    }}
-                    className="bg-gray-600 text-white px-4 py-2 rounded-lg font-semibold flex items-center gap-2 hover:bg-gray-700 transition-colors"
-                  >
-                    <X className="w-4 h-4" />
-                    Cancel
-                  </button>
+                <div className="absolute inset-0 bg-white/80 rounded-[40px] flex items-center justify-center">
+                  <div className="animate-spin h-6 w-6 border-2 border-[#7A8B5E] border-t-transparent rounded-full"></div>
                 </div>
               )}
             </div>
-          </div>
-        </div>
 
-        {/* Profile Details */}
-        <div className="p-6 md:p-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <h3 className="text-2xl font-black text-[#1A1F16]">{parentInfo.firstName} {parentInfo.lastName}</h3>
+            <p className="text-[#7A8B5E] font-bold text-sm uppercase tracking-widest mt-1">Authorized Parent</p>
             
-            {/* Parent Information */}
-            <div className="space-y-6">
-              <h3 className="text-xl font-bold text-gray-800 border-b border-gray-200 pb-2">
-                Parent Information
-              </h3>
-              
-              <div className="space-y-4">
-                {/* First Name */}
-                <div className="flex items-center gap-3">
-                  <UserCheck className="w-5 h-5 text-[#A4B494]" />
-                  <div className="flex-1">
-                    <label className="text-sm text-gray-500">First Name</label>
-                    {isEditing ? (
-                      <input
-                        type="text"
-                        value={editedData.firstName}
-                        onChange={(e) => setEditedData(prev => ({ ...prev, firstName: e.target.value }))}
-                        className="block w-full mt-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#A4B494]"
-                      />
-                    ) : (
-                      <div className="text-lg text-gray-800">{parentInfo.firstName}</div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Last Name */}
-                <div className="flex items-center gap-3">
-                  <UserCheck className="w-5 h-5 text-[#A4B494]" />
-                  <div className="flex-1">
-                    <label className="text-sm text-gray-500">Last Name</label>
-                    {isEditing ? (
-                      <input
-                        type="text"
-                        value={editedData.lastName}
-                        onChange={(e) => setEditedData(prev => ({ ...prev, lastName: e.target.value }))}
-                        className="block w-full mt-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#A4B494]"
-                      />
-                    ) : (
-                      <div className="text-lg text-gray-800">{parentInfo.lastName}</div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Email */}
-                <div className="flex items-center gap-3">
-                  <Mail className="w-5 h-5 text-[#A4B494]" />
-                  <div className="flex-1">
-                    <label className="text-sm text-gray-500">Email Address</label>
-                    <div className="text-lg text-gray-800">{parentInfo.email}</div>
-                    <p className="text-xs text-gray-400">Email cannot be changed</p>
-                  </div>
-                </div>
-
-                {/* Contact Number */}
-                <div className="flex items-center gap-3">
-                  <Phone className="w-5 h-5 text-[#A4B494]" />
-                  <div className="flex-1">
-                    <label className="text-sm text-gray-500">Contact Number</label>
-                    {isEditing ? (
-                      <input
-                        type="tel"
-                        value={editedData.contactNumber}
-                        onChange={(e) => setEditedData(prev => ({ ...prev, contactNumber: e.target.value }))}
-                        className="block w-full mt-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#A4B494]"
-                      />
-                    ) : (
-                      <div className="text-lg text-gray-800">{parentInfo.contactNumber}</div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Account Created */}
-                <div className="flex items-center gap-3">
-                  <Calendar className="w-5 h-5 text-[#A4B494]" />
-                  <div className="flex-1">
-                    <label className="text-sm text-gray-500">Account Created</label>
-                    <div className="text-lg text-gray-800">
-                      {new Date(parentInfo.createdAt).toLocaleDateString('en-GB', {
-                        day: 'numeric',
-                        month: 'long',
-                        year: 'numeric'
-                      })}
-                    </div>
-                  </div>
-                </div>
+            <div className="mt-8 space-y-3">
+              <div className="flex items-center justify-center gap-2 text-xs font-bold text-[#6B7280] uppercase">
+                <BadgeCheck size={14} className="text-green-500" /> Account Verified
+              </div>
+              <div className="text-[10px] font-black text-[#9CAD8F] uppercase tracking-tighter">
+                Member Since {new Date(parentInfo.createdAt).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}
               </div>
             </div>
 
-            {/* Student Information */}
-            <div className="space-y-6">
-              <h3 className="text-xl font-bold text-gray-800 border-b border-gray-200 pb-2">
-                Student Information
-              </h3>
-              
-              <div className="space-y-4">
-                {/* Student Name */}
-                <div className="flex items-center gap-3">
-                  <User className="w-5 h-5 text-[#A4B494]" />
-                  <div className="flex-1">
-                    <label className="text-sm text-gray-500">Student Name</label>
-                    <div className="text-lg text-gray-800">
-                      {studentInfo.firstName} {studentInfo.lastName}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Student Email */}
-                <div className="flex items-center gap-3">
-                  <Mail className="w-5 h-5 text-[#A4B494]" />
-                  <div className="flex-1">
-                    <label className="text-sm text-gray-500">Student Email</label>
-                    <div className="text-lg text-gray-800">{studentInfo.email}</div>
-                  </div>
-                </div>
-
-                {/* Student Contact */}
-                <div className="flex items-center gap-3">
-                  <Phone className="w-5 h-5 text-[#A4B494]" />
-                  <div className="flex-1">
-                    <label className="text-sm text-gray-500">Student Contact</label>
-                    <div className="text-lg text-gray-800">{studentInfo.contactNumber}</div>
-                  </div>
-                </div>
-
-                {/* Admission Date */}
-                <div className="flex items-center gap-3">
-                  <Calendar className="w-5 h-5 text-[#A4B494]" />
-                  <div className="flex-1">
-                    <label className="text-sm text-gray-500">Admission Date</label>
-                    <div className="text-lg text-gray-800">
-                      {studentInfo.admissionDate 
-                        ? new Date(studentInfo.admissionDate).toLocaleDateString('en-GB', {
-                            day: 'numeric',
-                            month: 'long',
-                            year: 'numeric'
-                          })
-                        : 'Not available'
-                      }
-                    </div>
-                  </div>
-                </div>
-
-                {/* Emergency Contact */}
-                <div className="flex items-center gap-3">
-                  <UserCheck className="w-5 h-5 text-[#A4B494]" />
-                  <div className="flex-1">
-                    <label className="text-sm text-gray-500">Emergency Contact</label>
-                    <div className="text-lg text-gray-800">
-                      {studentInfo.emergencyContactName || 'Not provided'}
-                    </div>
-                    {studentInfo.emergencyContactNumber && (
-                      <div className="text-sm text-gray-600">
-                        {studentInfo.emergencyContactNumber}
-                      </div>
-                    )}
-                  </div>
-                </div>
+            {!isEditing ? (
+              <button 
+                onClick={() => setIsEditing(true)}
+                className="mt-8 w-full py-4 rounded-2xl bg-[#E8EDDF] text-[#7A8B5E] font-black text-sm uppercase tracking-widest hover:bg-[#7A8B5E] hover:text-white transition-all shadow-sm"
+              >
+                Edit Profile
+              </button>
+            ) : (
+              <div className="mt-8 flex gap-3">
+                <button onClick={handleSaveProfile} className="flex-1 py-4 rounded-2xl bg-[#7A8B5E] text-white font-black text-sm uppercase">Save</button>
+                <button onClick={() => setIsEditing(false)} className="flex-1 py-4 rounded-2xl bg-red-50 text-red-500 font-black text-sm uppercase">Cancel</button>
               </div>
-            </div>
+            )}
           </div>
 
-          {/* Account Statistics */}
-          <div className="mt-8 pt-6 border-t border-gray-200">
-            <h3 className="text-xl font-bold text-gray-800 mb-4">Account Activity</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                <div className="text-green-800 font-semibold">Account Status</div>
-                <div className="text-2xl font-bold text-green-600">Active</div>
-              </div>
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <div className="text-blue-800 font-semibold">Last Updated</div>
-                <div className="text-sm font-medium text-blue-600">
-                  {new Date(parentInfo.updatedAt).toLocaleDateString('en-GB', {
-                    day: 'numeric',
-                    month: 'short',
-                    year: 'numeric'
-                  })}
-                </div>
-              </div>
-              <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                <div className="text-purple-800 font-semibold">Student ID</div>
-                <div className="text-xl font-bold text-purple-600">{parentInfo.studentId}</div>
-              </div>
-            </div>
+          <div className="bg-[#1A1F16] rounded-[32px] p-6 text-white text-center">
+            <p className="text-[10px] font-bold text-[#6B7280] uppercase tracking-[0.2em] mb-2">Need Help?</p>
+            <p className="text-sm text-white/70 mb-4 font-medium">Update your security settings or contact support for assistance.</p>
+            <button className="w-full py-3 rounded-xl border border-white/20 text-xs font-black uppercase tracking-widest hover:bg-white/10 transition-all">Support Center</button>
           </div>
         </div>
+
+        {/* ── Right Column: Details ── */}
+        <div className="lg:col-span-2 space-y-8">
+          
+          {/* Parent Info Section */}
+          <section className="bg-white rounded-[32px] p-8 shadow-sm border border-[#7A8B5E]/10">
+            <div className="flex items-center gap-3 mb-8">
+              <div className="w-10 h-10 rounded-xl bg-[#E8EDDF] flex items-center justify-center text-[#7A8B5E]">
+                <User size={20} />
+              </div>
+              <h3 className="text-xl font-black text-[#1A1F16]">Personal Information</h3>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+              <ProfileField 
+                label="First Name" 
+                value={parentInfo.firstName} 
+                editing={isEditing} 
+                onChange={(v) => setEditedData({...editedData, firstName: v})}
+                val={editedData.firstName}
+              />
+              <ProfileField 
+                label="Last Name" 
+                value={parentInfo.lastName} 
+                editing={isEditing} 
+                onChange={(v) => setEditedData({...editedData, lastName: v})}
+                val={editedData.lastName}
+              />
+              <ProfileField 
+                label="Email Address" 
+                value={parentInfo.email} 
+                icon={<Mail size={16} />}
+                disabled
+              />
+              <ProfileField 
+                label="Contact Number" 
+                value={parentInfo.contactNumber} 
+                editing={isEditing} 
+                onChange={(v) => setEditedData({...editedData, contactNumber: v})}
+                val={editedData.contactNumber}
+                icon={<Phone size={16} />}
+              />
+            </div>
+          </section>
+
+          {/* Student Association Section */}
+          <section className="bg-white rounded-[32px] p-8 shadow-sm border border-[#7A8B5E]/10">
+            <div className="flex items-center gap-3 mb-8">
+              <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600">
+                <ShieldCheck size={20} />
+              </div>
+              <h3 className="text-xl font-black text-[#1A1F16]">Associated Student</h3>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+              <DisplayField label="Student Full Name" value={`${studentInfo.firstName} ${studentInfo.lastName}`} icon={<User size={16}/>} />
+              <DisplayField label="Registration ID" value={parentInfo.studentId} icon={<ShieldCheck size={16}/>} />
+              <DisplayField label="Official Email" value={studentInfo.email} icon={<Mail size={16}/>} />
+              <DisplayField label="Emergency Contact" value={studentInfo.emergencyContactNumber} icon={<Phone size={16}/>} />
+            </div>
+          </section>
+
+          {/* Account Activity */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+            <ActivityCard label="Last Updated" value={new Date(parentInfo.updatedAt).toLocaleDateString()} icon={<Clock size={20} className="text-blue-500"/>} />
+            <ActivityCard label="Admission Date" value={new Date(studentInfo.admissionDate).toLocaleDateString()} icon={<Calendar size={20} className="text-purple-500"/>} />
+            <ActivityCard label="Location" value="Hostel Block A" icon={<MapPin size={20} className="text-red-500"/>} />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ProfileField({ label, value, editing, onChange, val, icon, disabled }) {
+  return (
+    <div className="space-y-2">
+      <label className="text-xs font-bold text-[#6B7280] uppercase tracking-widest flex items-center gap-2">
+        {icon} {label}
+      </label>
+      {editing && !disabled ? (
+        <input 
+          type="text" 
+          value={val} 
+          onChange={(e) => onChange(e.target.value)}
+          className="w-full px-4 py-3 rounded-xl bg-[#F8FAF5] border border-[#7A8B5E]/10 focus:border-[#7A8B5E] focus:ring-0 outline-none font-bold text-[#1A1F16] transition-all"
+        />
+      ) : (
+        <div className={`w-full px-4 py-3 rounded-xl bg-[#F8FAF5] border border-transparent font-black text-[#1A1F16] ${disabled ? 'opacity-60' : ''}`}>
+          {value}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DisplayField({ label, value, icon }) {
+  return (
+    <div className="space-y-2">
+      <label className="text-xs font-bold text-[#6B7280] uppercase tracking-widest flex items-center gap-2">
+        {icon} {label}
+      </label>
+      <div className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-transparent font-black text-[#1A1F16]">
+        {value || 'N/A'}
+      </div>
+    </div>
+  );
+}
+
+function ActivityCard({ label, value, icon }) {
+  return (
+    <div className="bg-white p-6 rounded-[32px] border border-[#7A8B5E]/5 shadow-sm flex items-center gap-4">
+      <div className="w-12 h-12 rounded-2xl bg-gray-50 flex items-center justify-center shrink-0">
+        {icon}
+      </div>
+      <div>
+        <p className="text-[10px] font-bold text-[#6B7280] uppercase tracking-widest">{label}</p>
+        <p className="text-sm font-black text-[#1A1F16] mt-0.5">{value}</p>
       </div>
     </div>
   );

@@ -1,230 +1,177 @@
-// Fixed Payments Confirmation Page
-'use client';
+"use client";
 
 import React, { useState } from 'react';
-import Image from 'next/image';
-import card1 from '../../../public/icons/card1.jpg'
-import card2 from '../../../public/icons/card2.jpg'
-import card3 from '../../../public/icons/card3.jpg'
-import card4 from '../../../public/icons/card4.jpg'
-import card5 from '../../../public/icons/card5.jpg'
-import card6 from '../../../public/icons/card6.avif'
-import card7 from '../../../public/icons/card7.jpg'
-
+import { CreditCard, ShieldCheck, Lock, ArrowRight, CheckCircle, IndianRupee, Smartphone, Globe } from 'lucide-react';
+import { toast } from 'react-hot-toast';
+import axios from 'axios';
 
 export default function Payments() {
-  const [paymentMethod, setPaymentMethod] = useState('UPI');
+  const [paymentMethod, setPaymentMethod] = useState('razorpay');
+  const [loading, setLoading] = useState(false);
 
-  const cardImages = [
-    card1,
-    card2,
-    card3,
-    card4,
-    card5,
-    card6,
-    card7
-  ];
+  const handlePayment = async () => {
+    try {
+      setLoading(true);
+      const parentToken = localStorage.getItem('parentToken');
+      if (!parentToken) throw new Error('Authentication required');
+
+      const tokenPayload = JSON.parse(atob(parentToken.split('.')[1]));
+      const studentId = tokenPayload.studentId;
+
+      // 1. Create Order
+      const { data: order } = await axios.post(
+        `${process.env.NEXT_PUBLIC_PROD_API_URL}/api/parentauth/create-razorpay-order`,
+        { amount: 50000, studentId }, // Example amount
+        { headers: { Authorization: `Bearer ${parentToken}` } }
+      );
+
+      const options = {
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_your_id",
+        amount: order.amount,
+        currency: "INR",
+        name: "KGF Hostel Management",
+        description: "Fees Payment",
+        order_id: order.id,
+        handler: async (response) => {
+          try {
+            await axios.post(
+              `${process.env.NEXT_PUBLIC_PROD_API_URL}/api/parentauth/verify-razorpay-payment`,
+              {
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature
+              },
+              { headers: { Authorization: `Bearer ${parentToken}` } }
+            );
+            toast.success("Payment Successful!");
+            window.location.href = "/dashboard";
+          } catch (err) {
+            toast.error("Payment Verification Failed");
+          }
+        },
+        theme: { color: "#7A8B5E" }
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.open();
+
+    } catch (err) {
+      toast.error(err.message || "Failed to initiate payment");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <div className="space-y-6 p-2 sm:p-4 lg:p-6">
-      {/* Fixed header to match Dashboard styling */}
-      <div className="flex items-center ml-2 mb-4 sm:mb-6">
-        <div className="w-1 h-6 sm:h-7 bg-[#4F8DCF] mr-2 sm:mr-3"></div>
-        <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold">Payments Confirmation</h2>
+    <div className="min-h-screen bg-[#F8FAF5] p-4 sm:p-6 lg:p-8 space-y-8 font-sans">
+      
+      {/* ── Page Header ── */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
+        <div className="flex items-center gap-3">
+          <div className="w-1.5 h-8 bg-[#7A8B5E] rounded-full"></div>
+          <h2 className="text-2xl font-black text-[#1A1F16]">Finalize Payment</h2>
+        </div>
+        <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100 text-[10px] font-black uppercase tracking-widest">
+          <ShieldCheck size={14} /> Encrypted Session
+        </div>
       </div>
 
-      <div className="space-y-6 sm:space-y-8 md:space-y-10">
-        {/* Payment Summary */}
-        <div className="bg-white rounded-xl px-4 sm:px-6 py-4 sm:py-6 shadow-[0px_10px_15px_rgba(0,0,0,0.15)]">
-          <h3 className="text-lg sm:text-xl md:text-2xl font-bold mb-3 sm:mb-5 text-black">Payment Summary</h3>
-          <div className="flex justify-between items-center mb-3 sm:mb-5 gap-1 sm:gap-2">
-            <p className="text-base sm:text-lg md:text-xl font-semibold text-black">Total amount:</p>
-            <p className="text-lg sm:text-lg md:text-xl font-bold text-black md:pr-24">₹ 50,000</p>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        
+        {/* ── Order Summary ── */}
+        <div className="bg-white rounded-[40px] p-8 sm:p-10 shadow-sm border border-[#7A8B5E]/10 space-y-8">
+          <div className="space-y-2">
+            <h3 className="text-xl font-black text-[#1A1F16] uppercase tracking-tight">Payment Summary</h3>
+            <p className="text-[#6B7280] text-sm font-medium">Review your outstanding dues before proceeding.</p>
           </div>
-          <div className="text-sm text-gray-800 space-y-2 sm:space-y-3 pl-4 sm:pl-8">
-            <p className="font-bold text-black">Tuition Fee</p>
-            <p className="font-bold text-black">Library Fee</p>
-            <p className="font-bold text-black">Annual Sports Fee</p>
+
+          <div className="space-y-4">
+            <SummaryItem label="Tuition Fee" amount="30,000" />
+            <SummaryItem label="Library Fee" amount="15,000" />
+            <SummaryItem label="Annual Sports Fee" amount="5,000" />
+            <div className="pt-6 border-t border-[#7A8B5E]/10 flex justify-between items-center">
+              <span className="text-lg font-black text-[#1A1F16]">Total Payable</span>
+              <span className="text-2xl font-black text-[#7A8B5E]">₹50,000</span>
+            </div>
+          </div>
+
+          <div className="bg-[#7A8B5E]/5 rounded-3xl p-6 space-y-4">
+            <div className="flex items-center gap-3 text-[#7A8B5E]">
+              <CheckCircle size={18} />
+              <span className="text-xs font-black uppercase tracking-widest">Instant Confirmation</span>
+            </div>
+            <p className="text-xs text-[#6B7280] font-bold leading-relaxed">
+              Your payment will be instantly updated in the student records. A digital receipt will be sent to your registered email.
+            </p>
           </div>
         </div>
 
-        {/* Payment Method with responsive spacing */}
-        <div className="px-2 sm:px-4 md:px-14">
-          <div
-            className="bg-white rounded-xl px-4 sm:px-8 md:px-16 py-4 sm:py-6 md:py-8"
-            style={{
-              boxShadow:
-                '0px 6px 12px rgba(0,0,0,0.1), 0px -2px 6px rgba(0,0,0,0.06), 6px 0px 8px rgba(0,0,0,0.05), -6px 0px 8px rgba(0,0,0,0.05)',
-            }}
-          >
-            <h3 className="text-sm sm:text-md md:text-lg font-bold text-black mb-3 sm:mb-4">Select Payment Method:</h3>
-            <div
-              className="p-4 sm:p-6 md:p-10 rounded-lg bg-white"
-              style={{
-                boxShadow:
-                  'inset 5px 0 8px rgba(0,0,0,0.1), inset -5px 0 8px rgba(0,0,0,0.1), inset 0 5px 8px rgba(0,0,0,0.1)',
-              }}
+        {/* ── Payment Method ── */}
+        <div className="bg-white rounded-[40px] p-8 sm:p-10 shadow-sm border border-[#7A8B5E]/10 space-y-8">
+          <div className="space-y-2">
+            <h3 className="text-xl font-black text-[#1A1F16] uppercase tracking-tight">Select Method</h3>
+            <p className="text-[#6B7280] text-sm font-medium">Choose your preferred secure payment gateway.</p>
+          </div>
+
+          <div className="space-y-4">
+            <PaymentOption 
+              id="razorpay" 
+              label="Razorpay (UPI/Card/NetBanking)" 
+              selected={paymentMethod === 'razorpay'} 
+              onClick={() => setPaymentMethod('razorpay')}
+              icon={<Smartphone className="text-blue-600" />}
+            />
+            <PaymentOption 
+              id="bank" 
+              label="Direct Bank Transfer" 
+              selected={paymentMethod === 'bank'} 
+              onClick={() => setPaymentMethod('bank')}
+              icon={<Globe className="text-[#7A8B5E]" />}
+            />
+          </div>
+
+          <div className="pt-8 space-y-4">
+            <button 
+              onClick={handlePayment}
+              disabled={loading}
+              className="w-full py-5 rounded-[24px] bg-[#7A8B5E] text-white font-black text-sm uppercase tracking-[0.2em] shadow-xl shadow-[#7A8B5E]/20 hover:bg-[#5A6E3A] hover:-translate-y-1 transition-all flex items-center justify-center gap-3"
             >
-              <div className="space-y-4 sm:space-y-6">
-                <div className="flex items-center justify-between mb-3">
-                  <p className="text-xs text-gray-400 font-medium tracking-widest uppercase">
-                    Accepted Payments
-                  </p>
-                  {/* Secured badge */}
-                  <span className="flex items-center gap-1 text-[10px] text-emerald-500 font-semibold bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
-                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                    </svg>
-                    100% Secure
-                  </span>
-                </div>
-                {/* UPI */}
-                <label className="flex items-center space-x-3 text-black cursor-pointer">
-                  <input
-                    type="radio"
-                    name="payment"
-                    value="UPI"
-                    checked={paymentMethod === 'UPI'}
-                    onChange={() => setPaymentMethod('UPI')}
-                    className="w-4 h-4 sm:w-5 sm:h-5 accent-[#1109FF]"
-                  />
-                  <span className="flex items-center gap-2 text-sm sm:text-[15px] font-semibold">
-                    < div className="text-sm sm:text-base" /> UPI
-                  </span>
-                </label>
-
-                {/* Net Banking */}
-                <label className="flex items-center space-x-3 text-black cursor-pointer">
-                  <input
-                    type="radio"
-                    name="payment"
-                    value="Net Banking"
-                    checked={paymentMethod === 'Net Banking'}
-                    onChange={() => setPaymentMethod('Net Banking')}
-                    className="w-4 h-4 sm:w-5 sm:h-5 accent-[#1109FF]"
-                  />
-                  <span className="flex items-center gap-2 text-sm sm:text-[15px] font-semibold">
-                    <div className="text-sm sm:text-base" /> Net Banking
-                  </span>
-                </label>
-
-                {/* Card */}
-                <label className="flex flex-col text-black space-y-2 cursor-pointer">
-                  <span className="flex items-center gap-2">
-                    <input
-                      type="radio"
-                      name="payment"
-                      value="Card"
-                      checked={paymentMethod === 'Card'}
-                      onChange={() => setPaymentMethod('Card')}
-                      className="w-4 h-4 sm:w-5 sm:h-5 accent-[#1109FF]"
-                    />
-                    <span className="flex items-center gap-2 text-sm sm:text-[15px] font-semibold">
-                      <div className="text-sm sm:text-base" /> Credit or Debit Card
-                    </span>
-                  </span>
-
-                  {/* Card Images - Single Row for Mobile, Original for Desktop */}
-
-
-                  {/* <div className="flex flex-wrap justify-center gap-1 sm:gap-2 md:gap-3 mt-3">
-                    {cardImages.map((src, index) => (
-                      <Image
-                        key={index}
-                        src={src}
-                        alt={`Card ${index + 1}`}
-                        className="w-[40px] sm:w-[70px] md:w-[90px] rounded object-contain"
-                      />
-                    ))}
-                  </div> */}
-
-
-                  <div className="mt-4">
-
-                    {/* Label */}
-
-                    {/* Cards Container */}
-                    <div className="bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3">
-                      <div className="flex flex-wrap justify-center items-center gap-2 sm:gap-3">
-                        {cardImages.map((src, index) => (
-                          <div
-                            key={index}
-                            className="group relative bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-gray-300 hover:-translate-y-0.5 transition-all duration-200 p-2 cursor-default"
-                          >
-                            <Image
-                              src={src}
-                              alt={`Payment method ${index + 1}`}
-                              className="w-[44px] sm:w-[56px] md:w-[64px] h-[28px] sm:h-[34px] md:h-[40px] object-contain"
-                            />
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                </label>
-              </div>
-
-              {/* <div className="mt-6 sm:mt-8 md:mt-10 flex justify-center">
-                <div className="bg-[#A4B494] hover:bg-[#8DA087] px-2 py-3 w-[180px] transition-all duration-300 rounded-md shadow-lg shadow-black/40 flex items-center justify-center">
-                  <a
-                    href="/payment-success"
-                    className="text-sm font-semibold w-full sm:w-auto text-center"
-                  >
-                    Proceed To Pay
-                  </a>
-                </div>
-              </div> */}
-
-
-              {/* Proceed to Payment Button */}
-              <div className="mt-6">
-
-                {/* Button */}
-                <button
-                  onClick={() => {/* your handler */ }}
-                  className="group relative w-full overflow-hidden bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-semibold text-sm sm:text-base rounded-2xl px-6 py-4 shadow-lg shadow-emerald-200 hover:shadow-emerald-300 hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 active:shadow-md transition-all duration-200"
-                >
-                  {/* Shine sweep effect on hover */}
-                  <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-in-out" />
-
-                  <span className="relative flex items-center justify-center gap-2">
-
-                    {/* Lock icon */}
-                    <svg className="w-4 h-4 opacity-90" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
-                    </svg>
-
-                    Proceed to Payment
-
-                    {/* Arrow icon */}
-                    <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-                    </svg>
-
-                  </span>
-                </button>
-
-                {/* Below button — cancel link + ssl note */}
-                <div className="flex items-center justify-end mt-3 px-1">
-                  <span className="flex items-center gap-1 text-[11px] text-gray-400">
-                    <svg className="w-3 h-3 text-emerald-500" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-                    </svg>
-                    SSL Encrypted
-                  </span>
-                </div>
-
-                {/* Bottom note */}
-                <p className="text-center text-[11px] text-gray-400 mt-2">
-                  All transactions are encrypted and secure
-                </p>
-
-              </div>
-            </div>
+              {loading ? "Processing..." : <>Pay Securely Now <ArrowRight size={18} /></>}
+            </button>
+            <p className="text-center text-[10px] font-bold text-[#6B7280] uppercase tracking-widest flex items-center justify-center gap-2">
+              <Lock size={12} /> PCI-DSS Compliant Gateway
+            </p>
           </div>
         </div>
       </div>
     </div>
   );
 }
+
+function SummaryItem({ label, amount }) {
+  return (
+    <div className="flex justify-between items-center group">
+      <span className="text-sm font-bold text-[#6B7280] uppercase tracking-wider group-hover:text-[#1A1F16] transition-colors">{label}</span>
+      <span className="text-sm font-black text-[#1A1F16]">₹{amount}</span>
+    </div>
+  );
+}
+
+function PaymentOption({ id, label, selected, onClick, icon }) {
+  return (
+    <div 
+      onClick={onClick}
+      className={`p-6 rounded-3xl border-2 cursor-pointer transition-all flex items-center justify-between ${selected ? 'border-[#7A8B5E] bg-[#7A8B5E]/5 shadow-lg' : 'border-gray-100 hover:border-[#7A8B5E]/30'}`}
+    >
+      <div className="flex items-center gap-4">
+        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${selected ? 'bg-white shadow-sm' : 'bg-gray-50'}`}>
+          {icon}
+        </div>
+        <span className={`text-sm font-black uppercase tracking-wider ${selected ? 'text-[#1A1F16]' : 'text-[#6B7280]'}`}>{label}</span>
+      </div>
+      <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${selected ? 'border-[#7A8B5E] bg-[#7A8B5E]' : 'border-gray-200'}`}>
+        {selected && <div className="w-2 h-2 rounded-full bg-white" />}
+      </div>
+    </div>
+  );
+}

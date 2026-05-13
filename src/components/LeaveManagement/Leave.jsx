@@ -1,15 +1,19 @@
+"use client";
+
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import {toast} from "react-hot-toast";
+import { toast } from "react-hot-toast";
+import { Calendar, Clock, CheckCircle, XCircle, AlertCircle, MessageSquare, ArrowRight, Filter, ChevronDown, Check, X } from "lucide-react";
 
-const statusColors = {
-  APPROVED: "bg-green-500 text-white",
-  REJECTED: "bg-red-500 text-white", 
-  PENDING: "bg-yellow-400 text-white",
+const statusStyles = {
+  APPROVED: "bg-green-50 text-green-600 border-green-100",
+  REJECTED: "bg-red-50 text-red-600 border-red-100",
+  PENDING: "bg-amber-50 text-amber-600 border-amber-100",
 };
 
 export default function LeaveManagementTable() {
   const [leaveData, setLeaveData] = useState([]);
+  const [filteredLeaves, setFilteredLeaves] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [actionLoading, setActionLoading] = useState({});
@@ -17,114 +21,63 @@ export default function LeaveManagementTable() {
   const [selectedLeave, setSelectedLeave] = useState(null);
   const [modalAction, setModalAction] = useState('');
   const [parentComment, setParentComment] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('ALL');
 
   useEffect(() => {
-    // Check if user came from email link and handle auto-login
-  const handleEmailRedirect = () => {
-  const urlParams = new URLSearchParams(window.location.search);
-  const fromEmail = urlParams.get('fromEmail');
-  
-  if (fromEmail === 'true') {
-    const parentToken = localStorage.getItem('parentToken');
-    if (!parentToken) {
-      // No token found, redirect to login with return URL
-      window.location.href = `/`;
-      return false;
-    }
-    // Token exists, user will automatically see the page
-  }
-  return true;
-};
-
-    if (!handleEmailRedirect()) {
-      return; // Exit if redirecting to login
-    }
-
-    const fetchLeaveData = async () => {
-      try {
-        setLoading(true);
-        
-        // Get student ID from parent token
-        const parentToken = localStorage.getItem('parentToken');
-        if (!parentToken) {
-          throw new Error('Parent token not found');
-        }
-
-        const tokenPayload = JSON.parse(atob(parentToken.split('.')[1]));
-        const studentId = tokenPayload.studentId;
-        if (!studentId) {
-          throw new Error('Student ID not found in token');
-        }
-
-        // Fetch leave data using axios
-        const response = await axios.get(
-          `${process.env.NEXT_PUBLIC_PROD_API_URL}/api/parentauth/leave-management`,
-          {
-            params: { studentId },
-            headers: {
-              Authorization: `Bearer ${parentToken}`,
-              'Content-Type': 'application/json'
-            }
-          }
-        );
-
-        const leaveHistory = response.data.leaveHistory;
-        
-        // Process and format the leave data
-        const formattedData = processLeaveData(leaveHistory);
-        setLeaveData(formattedData);
-
-      } catch (error) {
-        console.error('Error fetching leave data:', error);
-        let errorMessage = 'Failed to load leave data';
-        
-        if (error.response) {
-          errorMessage = `Server error: ${error.response.status} - ${error.response.statusText}`;
-        } else if (error.request) {
-          errorMessage = 'Network error - unable to reach server';
-        } else {
-          errorMessage = error.message;
-        }
-        setError(errorMessage);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchLeaveData();
   }, []);
 
-  // Function to process raw leave data into display format
-  const processLeaveData = (leaveHistory) => {
-    return leaveHistory.map(leave => {
-      // Format dates from ISO to DD-MM-YYYY
-      const startDate = new Date(leave.startDate).toLocaleDateString('en-GB', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        timeZone: 'Asia/Kolkata'
-      });
-      
-      const endDate = new Date(leave.endDate).toLocaleDateString('en-GB', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        timeZone: 'Asia/Kolkata'
-      });
+  useEffect(() => {
+    let result = leaveData;
+    if (searchTerm) {
+      result = result.filter(l => 
+        l.reason.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        l.type.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+    if (statusFilter !== 'ALL') {
+      result = result.filter(l => l.status === statusFilter);
+    }
+    setFilteredLeaves(result);
+  }, [searchTerm, statusFilter, leaveData]);
 
-      return {
+  const fetchLeaveData = async () => {
+    try {
+      setLoading(true);
+      const parentToken = localStorage.getItem('parentToken');
+      if (!parentToken) throw new Error('Parent token not found');
+
+      const tokenPayload = JSON.parse(atob(parentToken.split('.')[1]));
+      const studentId = tokenPayload.studentId;
+
+      const response = await axios.get(
+        `${process.env.NEXT_PUBLIC_PROD_API_URL}/api/parentauth/leave-management`,
+        {
+          params: { studentId },
+          headers: { Authorization: `Bearer ${parentToken}` }
+        }
+      );
+
+      const formattedData = response.data.leaveHistory.map(leave => ({
         _id: leave._id,
         type: leave.leaveType,
-        from: startDate,
-        to: endDate,
+        from: new Date(leave.startDate).toLocaleDateString('en-GB'),
+        to: new Date(leave.endDate).toLocaleDateString('en-GB'),
         reason: leave.reason,
         status: leave.status.toUpperCase(),
         duration: leave.duration
-      };
-    });
+      }));
+      setLeaveData(formattedData);
+      setFilteredLeaves(formattedData);
+
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // Handle leave approval/rejection
   const handleLeaveAction = (leave, action) => {
     setSelectedLeave(leave);
     setModalAction(action);
@@ -134,415 +87,187 @@ export default function LeaveManagementTable() {
 
   const confirmLeaveAction = async () => {
     if (!selectedLeave) return;
-
     setActionLoading(prev => ({ ...prev, [selectedLeave._id]: true }));
 
     try {
       const parentToken = localStorage.getItem('parentToken');
-      
-      const response = await axios.put(
+      await axios.put(
         `${process.env.NEXT_PUBLIC_PROD_API_URL}/api/parentauth/leave-status`,
         {
           leaveId: selectedLeave._id,
           status: modalAction,
           parentComment: parentComment.trim()
         },
-        {
-          headers: {
-            Authorization: `Bearer ${parentToken}`,
-            'Content-Type': 'application/json'
-          }
-        }
+        { headers: { Authorization: `Bearer ${parentToken}` } }
       );
 
-      // Update the leave data in state
-      setLeaveData(prevData => 
-        prevData.map(leave => 
-          leave._id === selectedLeave._id 
-            ? { ...leave, status: modalAction.toUpperCase() }
-            : leave
-        )
-      );
-
-      // Show success message
-      toast.success(`Leave request ${modalAction} successfully!`);
-      
+      setLeaveData(prev => prev.map(l => l._id === selectedLeave._id ? { ...l, status: modalAction.toUpperCase() } : l));
+      toast.success(`Leave ${modalAction} successfully!`);
       setShowModal(false);
-      setSelectedLeave(null);
-      setParentComment('');
-
     } catch (error) {
-      console.error(`Error ${modalAction} leave:`, error);
-      toast.error(error.response?.data?.message || `Failed to ${modalAction} leave request`);
+      toast.error(error.response?.data?.message || `Failed to ${modalAction} leave`);
     } finally {
       setActionLoading(prev => ({ ...prev, [selectedLeave._id]: false }));
     }
   };
 
-  const closeModal = () => {
-    setShowModal(false);
-    setSelectedLeave(null);
-    setParentComment('');
-  };
-
-  // Action buttons component
-const ProfessionalActionButtons = ({ leave }) => {
-  const [showDropdown, setShowDropdown] = useState(false);
-
-  if (leave.status !== 'PENDING') {
-    return (
-      <div className="flex justify-center items-center">
-        <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium border ${
-          leave.status === 'APPROVED' 
-            ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
-            : 'bg-red-50 text-red-700 border-red-200'
-        }`}>
-          <div className={`w-1.5 h-1.5 rounded-full ${
-            leave.status === 'APPROVED' ? 'bg-emerald-500' : 'bg-red-500'
-          }`}></div>
-          {leave.status === 'APPROVED' ? 'Approved' : 'Declined'}
-        </div>
-      </div>
-    );
-  }
+  if (loading) return (
+    <div className="min-h-screen bg-[#F8FAF5] flex items-center justify-center">
+      <div className="animate-spin rounded-full h-12 w-12 border-4 border-[#7A8B5E] border-t-transparent"></div>
+    </div>
+  );
 
   return (
-    <div className="relative flex justify-center">
-      <button
-        onClick={() => setShowDropdown(!showDropdown)}
-        className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-      >
-        Review
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
-      </button>
+    <div className="min-h-screen bg-[#F8FAF5] p-4 sm:p-6 lg:p-8 space-y-8 font-sans">
+      
+      {/* ── Page Header ── */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
+        <div className="flex items-center gap-3">
+          <div className="w-1.5 h-8 bg-[#7A8B5E] rounded-full"></div>
+          <h2 className="text-2xl font-black text-[#1A1F16]">Leave Authorizations</h2>
+        </div>
+        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+          <div className="relative group flex-1 sm:w-64">
+            <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#7A8B5E]" size={14} />
+            <input 
+              type="text"
+              placeholder="Search reason..."
+              className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-white border border-[#7A8B5E]/10 focus:border-[#7A8B5E] outline-none text-xs font-bold transition-all"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <select 
+            className="px-4 py-2.5 rounded-xl bg-white border border-[#7A8B5E]/10 text-xs font-black uppercase tracking-widest text-[#7A8B5E] outline-none"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+          >
+            <option value="ALL">All Status</option>
+            <option value="PENDING">Pending</option>
+            <option value="APPROVED">Approved</option>
+            <option value="REJECTED">Rejected</option>
+          </select>
+        </div>
+      </div>
 
-      {showDropdown && (
-        <div className="absolute top-full mt-1 right-0 w-40 bg-white border border-gray-200 rounded-md shadow-lg z-10">
-          <button
-            onClick={() => {
-              handleLeaveAction(leave, 'approved');
-              setShowDropdown(false);
-            }}
-            disabled={actionLoading[leave._id]}
-            className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-700 flex items-center gap-2 disabled:opacity-50"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
-            Approve
-          </button>
-          <button
-            onClick={() => {
-              handleLeaveAction(leave, 'rejected');
-              setShowDropdown(false);
-            }}
-            disabled={actionLoading[leave._id]}
-            className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-red-50 hover:text-red-700 flex items-center gap-2 disabled:opacity-50"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-            Decline
-          </button>
+      {/* ── Stats ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+        <StatCard label="Approved" value={leaveData.filter(l => l.status === 'APPROVED').length} icon={<CheckCircle size={24}/>} color="text-green-600" bgColor="bg-green-50" />
+        <StatCard label="Pending" value={leaveData.filter(l => l.status === 'PENDING').length} icon={<AlertCircle size={24}/>} color="text-amber-600" bgColor="bg-amber-50" />
+        <StatCard label="Declined" value={leaveData.filter(l => l.status === 'REJECTED').length} icon={<XCircle size={24}/>} color="text-red-600" bgColor="bg-red-50" />
+      </div>
+
+      {/* ── List ── */}
+      <div className="space-y-4">
+        {filteredLeaves.map((leave, i) => (
+          <div key={i} className="bg-white rounded-[32px] p-6 sm:p-8 shadow-sm border border-[#7A8B5E]/10 flex flex-col lg:flex-row gap-8 items-start lg:items-center transition-all hover:shadow-md">
+            
+            <div className="flex items-center gap-6 flex-1">
+              <div className={`w-16 h-16 rounded-[24px] flex items-center justify-center shrink-0 ${leave.status === 'PENDING' ? 'bg-amber-50 text-amber-600' : leave.status === 'APPROVED' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
+                {leave.status === 'PENDING' ? <Clock size={28} /> : leave.status === 'APPROVED' ? <CheckCircle size={28} /> : <XCircle size={28} />}
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-lg font-black text-[#1A1F16]">{leave.type}</h4>
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-bold text-[#6B7280] uppercase tracking-widest">
+                  <span className="flex items-center gap-1.5 text-[#1A1F16]"><Calendar size={12}/> {leave.from}</span>
+                  <ArrowRight size={12} />
+                  <span className="flex items-center gap-1.5 text-[#1A1F16]"><Calendar size={12}/> {leave.to}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex-1 lg:max-w-xs bg-gray-50 rounded-2xl p-4 border border-[#7A8B5E]/5">
+              <p className="text-[10px] font-black text-[#6B7280] uppercase tracking-widest mb-1">Reason for Leave</p>
+              <p className="text-sm font-bold text-[#1A1F16] line-clamp-2">{leave.reason}</p>
+            </div>
+
+            <div className="flex items-center gap-6 w-full lg:w-auto">
+              <div className="flex flex-col items-end gap-1 flex-1 lg:flex-none">
+                <p className="text-[10px] font-black text-[#6B7280] uppercase tracking-widest">Current Status</p>
+                <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${statusStyles[leave.status]}`}>
+                  {leave.status}
+                </span>
+              </div>
+              
+              {leave.status === 'PENDING' && (
+                <div className="flex gap-2">
+                  <button 
+                    onClick={() => handleLeaveAction(leave, 'approved')}
+                    className="w-12 h-12 rounded-2xl bg-green-600 text-white flex items-center justify-center shadow-lg shadow-green-600/20 hover:scale-105 transition-all"
+                  >
+                    <Check size={20} />
+                  </button>
+                  <button 
+                    onClick={() => handleLeaveAction(leave, 'rejected')}
+                    className="w-12 h-12 rounded-2xl bg-red-500 text-white flex items-center justify-center shadow-lg shadow-red-500/20 hover:scale-105 transition-all"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* ── Modal ── */}
+      {showModal && (
+        <div className="fixed inset-0 bg-[#1A1F16]/40 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-in fade-in duration-300">
+          <div className="bg-white rounded-[40px] w-full max-w-lg p-10 shadow-2xl space-y-8">
+            <div className="text-center">
+              <div className={`w-20 h-20 mx-auto rounded-[30px] flex items-center justify-center mb-6 ${modalAction === 'approved' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
+                {modalAction === 'approved' ? <CheckCircle size={40} /> : <XCircle size={40} />}
+              </div>
+              <h3 className="text-2xl font-black text-[#1A1F16] uppercase tracking-tight">
+                {modalAction === 'approved' ? 'Confirm Approval' : 'Confirm Rejection'}
+              </h3>
+              <p className="text-[#6B7280] font-medium mt-2">You are about to {modalAction} this leave request.</p>
+            </div>
+
+            <div className="space-y-4">
+              <label className="text-[10px] font-black text-[#6B7280] uppercase tracking-widest flex items-center gap-2">
+                <MessageSquare size={14} /> Add Remarks (Optional)
+              </label>
+              <textarea 
+                className="w-full h-32 p-4 rounded-3xl bg-[#F8FAF5] border border-[#7A8B5E]/10 focus:border-[#7A8B5E] outline-none font-bold text-[#1A1F16] transition-all resize-none"
+                placeholder="Type your message here..."
+                value={parentComment}
+                onChange={(e) => setParentComment(e.target.value)}
+              />
+            </div>
+
+            <div className="flex gap-4">
+              <button 
+                onClick={() => setShowModal(false)}
+                className="flex-1 py-4 rounded-2xl bg-gray-50 text-[#6B7280] font-black text-sm uppercase tracking-widest hover:bg-gray-100 transition-all"
+              >
+                Go Back
+              </button>
+              <button 
+                onClick={confirmLeaveAction}
+                disabled={actionLoading[selectedLeave?._id]}
+                className={`flex-1 py-4 rounded-2xl text-white font-black text-sm uppercase tracking-widest shadow-lg transition-all ${modalAction === 'approved' ? 'bg-green-600 shadow-green-600/20 hover:bg-green-700' : 'bg-red-500 shadow-red-500/20 hover:bg-red-600'}`}
+              >
+                {actionLoading[selectedLeave?._id] ? 'Processing...' : `Confirm ${modalAction}`}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
   );
-};
-
-  // Loading state
-  if (loading) {
-    return (
-      <div className="space-y-6 p-2 sm:p-4 lg:p-6">
-        <div className="flex items-center ml-2 mb-4 sm:mb-6">
-          <div className="w-1 h-6 sm:h-7 bg-[#4F8DCF] mr-2 sm:mr-3"></div>
-          <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold">Leave Management</h2>
-        </div>
-        
-        <div className="w-full bg-white rounded-2xl shadow-inner border border-gray-100 p-8 flex items-center justify-center min-h-[400px]">
-          <div className="flex flex-col items-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
-            <p className="text-gray-600">Loading leave data...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Error state
-  if (error) {
-    return (
-      <div className="space-y-6 p-2 sm:p-4 lg:p-6">
-        <div className="flex items-center ml-2 mb-4 sm:mb-6">
-          <div className="w-1 h-6 sm:h-7 bg-[#4F8DCF] mr-2 sm:mr-3"></div>
-          <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold">Leave Management</h2>
-        </div>
-        
-        <div className="w-full bg-white rounded-2xl shadow-inner border border-gray-100 p-8 flex items-center justify-center min-h-[400px]">
-          <div className="text-center">
-            <div className="text-red-600 text-lg font-semibold mb-2">Error Loading Data</div>
-            <p className="text-gray-600">{error}</p>
-            <button 
-              onClick={() => window.location.reload()} 
-              className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-            >
-              Retry
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // No data state
-  if (leaveData.length === 0) {
-    return (
-      <div className="space-y-6 p-2 sm:p-4 lg:p-6">
-        <div className="flex items-center ml-2 mb-4 sm:mb-6">
-          <div className="w-1 h-6 sm:h-7 bg-[#4F8DCF] mr-2 sm:mr-3"></div>
-          <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold">Leave Management</h2>
-        </div>
-        
-        <div className="w-full bg-white rounded-2xl shadow-inner border border-gray-100 p-8 flex items-center justify-center min-h-[400px]">
-          <div className="text-center">
-            <div className="text-gray-600 text-lg font-semibold mb-2">No Leave Records Found</div>
-            <p className="text-gray-500">No leave applications found for this student.</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <>
-      <div className="space-y-6 p-2 sm:p-4 lg:p-6">
-        <div className="flex items-center ml-2 mb-4 sm:mb-6">
-          <div className="w-1 h-6 sm:h-7 bg-[#4F8DCF] mr-2 sm:mr-3"></div>
-          <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold">Leave Management</h2>
-        </div>
-
-        {/* Summary Statistics */}
-        <div className="mb-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-            <div className="text-green-800 font-semibold">Approved Leaves</div>
-            <div className="text-2xl font-bold text-green-600">
-              {leaveData.filter(entry => entry.status === 'APPROVED').length}
-            </div>
-          </div>
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-            <div className="text-red-800 font-semibold">Rejected Leaves</div>
-            <div className="text-2xl font-bold text-red-600">
-              {leaveData.filter(entry => entry.status === 'REJECTED').length}
-            </div>
-          </div>
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-            <div className="text-yellow-800 font-semibold">Pending Leaves</div>
-            <div className="text-2xl font-bold text-yellow-600">
-              {leaveData.filter(entry => entry.status === 'PENDING').length}
-            </div>
-          </div>
-        </div>
-
-        {/* Main Table Container */}
-        <div className="w-full bg-white rounded-2xl shadow-inner border border-gray-100 overflow-hidden" style={{ boxShadow: 'inset 0 4px 10px rgba(0, 0, 0, 0.1)' }}>
-          <div className="w-full flex flex-col items-center p-4 md:p-5 pb-4">
-            
-            {/* Improved Mobile View with Better Spacing */}
-            <div className="md:hidden w-full">
-              {/* Mobile Header - More Spacious */}
-              <div className="p-4 mb-4 rounded-lg" style={{ backgroundColor: '#D9D9D9' }}>
-                <div className="grid grid-cols-4 gap-4 text-sm font-bold text-gray-800">
-                  <div className="text-center">Type</div>
-                  <div className="text-center">From</div>
-                  <div className="text-center">To</div>
-                  <div className="text-center">Action</div>
-                </div>
-              </div>
-
-              {/* Mobile Cards with Better Spacing */}
-              <div className="space-y-4">
-                {leaveData.map((row, i) => (
-                  <div
-                    key={row._id || i}
-                    className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden"
-                  >
-                    {/* Top Section - Type, Dates, Action */}
-                    <div className="p-4">
-                      <div className="grid grid-cols-4 gap-3 items-center">
-                        <div className="text-center">
-                          <div className="text-sm font-bold text-gray-800 leading-tight">
-                            {row.type}
-                          </div>
-                        </div>
-                        <div className="text-center">
-                          <div className="text-xs font-semibold text-gray-600 leading-tight break-words">
-                            {row.from}
-                          </div>
-                        </div>
-                        <div className="text-center">
-                          <div className="text-xs font-semibold text-gray-600 leading-tight break-words">
-                            {row.to}
-                          </div>
-                        </div>
-                        <div className="flex justify-center">
-                          <div className="scale-90">
-                            <ProfessionalActionButtons leave={row} />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {/* Bottom Section - Reason and Status */}
-                    <div className="px-4 pb-4">
-                      <div className="border-t border-gray-100 pt-3 space-y-3">
-                        {/* Reason */}
-                        <div className="bg-gray-50 p-3 rounded-md">
-                          <div className="text-xs font-semibold text-gray-500 mb-1">Reason:</div>
-                          <div className="text-sm font-medium text-gray-700 leading-relaxed">
-                            {row.reason}
-                          </div>
-                        </div>
-                        
-                        {/* Status */}
-                        <div className="text-center">
-                          <span
-                            className={`inline-block px-4 py-2 text-xs font-semibold rounded-md ${statusColors[row.status]}`}
-                          >
-                            {row.status}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Desktop Table - Unchanged */}
-            <div className="hidden md:block w-full max-w-none lg:max-w-6xl xl:max-w-7xl">
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[700px]">
-                  <thead>
-                    <tr style={{ backgroundColor: '#D9D9D9' }}>
-                      <th className="py-3 md:py-4 px-4 md:px-6 font-bold text-gray-800 text-center text-base md:text-lg">
-                        Leave Type
-                      </th>
-                      <th className="py-3 md:py-4 px-4 md:px-6 font-bold text-gray-800 text-center text-base md:text-lg">
-                        From Date
-                      </th>
-                      <th className="py-3 md:py-4 px-4 md:px-6 font-bold text-gray-800 text-center text-base md:text-lg">
-                        To Date
-                      </th>
-                      <th className="py-3 md:py-4 px-4 md:px-6 font-bold text-gray-800 text-center text-base md:text-lg">
-                        Reason
-                      </th>
-                      <th className="py-3 md:py-4 px-4 md:px-6 font-bold text-gray-800 text-center text-base md:text-lg">
-                        Status
-                      </th>
-                      <th className="py-3 md:py-4 px-4 md:px-6 font-bold text-gray-800 text-center text-base md:text-lg">
-                        Action
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {leaveData.map((row, i) => (
-                      <tr
-                        key={row._id || i}
-                        className="hover:bg-gray-50 transition-colors"
-                      >
-                        <td className="py-3 md:py-4 px-4 md:px-6 font-bold text-gray-700 text-center text-sm md:text-base">
-                          {row.type}
-                        </td>
-                        <td className="py-3 md:py-4 px-4 md:px-6 font-bold text-gray-700 text-center text-sm md:text-base">
-                          {row.from}
-                        </td>
-                        <td className="py-3 md:py-4 px-4 md:px-6 font-bold text-gray-700 text-center text-sm md:text-base">
-                          {row.to}
-                        </td>
-                        <td className="py-3 md:py-4 px-4 md:px-6 font-bold text-gray-700 text-center text-sm md:text-base">
-                          {row.reason}
-                        </td>
-                        <td className="py-3 md:py-4 px-4 md:px-6">
-                          <div className="flex justify-center items-center">
-                            <span
-                              className={`flex items-center justify-center w-[90px] md:w-[100px] h-[36px] md:h-[40px] font-semibold text-xs md:text-sm rounded-sm ${statusColors[row.status]}`}
-                            >
-                              {row.status}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="py-3 md:py-4 px-4 md:px-6">
-                          <ProfessionalActionButtons leave={row} />
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Confirmation Modal */}
-      {showModal && (
-<div className="fixed inset-0 bg-black/30 backdrop-blur-md flex items-center justify-center z-50 p-4 transition-all duration-300 ease-in-out">
-
-          <div className="bg-white rounded-lg max-w-md w-full p-6">
-            <h3 className="text-lg font-bold mb-4">
-              {modalAction === 'approved' ? 'Approve Leave Request' : 'Reject Leave Request'}
-            </h3>
-            
-            <div className="mb-4">
-              <p className="text-gray-700 mb-2">
-                Are you sure you want to <strong>{modalAction === 'approved' ? 'approve' : 'reject'}</strong> this leave request?
-              </p>
-              
-              <div className="bg-gray-50 p-3 rounded mb-4">
-                <p><strong>Leave Type:</strong> {selectedLeave?.type}</p>
-                <p><strong>Duration:</strong> {selectedLeave?.from} to {selectedLeave?.to}</p>
-                <p><strong>Reason:</strong> {selectedLeave?.reason}</p>
-              </div>
-
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Comment (Optional):
-              </label>
-              <textarea
-                value={parentComment}
-                onChange={(e) => setParentComment(e.target.value)}
-                placeholder={`Add a comment about your ${modalAction === 'approved' ? 'approval' : 'rejection'}...`}
-                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                rows="3"
-              />
-            </div>
-
-            <div className="flex gap-3 justify-end">
-              <button
-                onClick={closeModal}
-                className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={confirmLeaveAction}
-                disabled={actionLoading[selectedLeave?._id]}
-                className={`px-4 py-2 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-                  modalAction === 'approved' 
-                    ? 'bg-green-500 hover:bg-green-600' 
-                    : 'bg-red-500 hover:bg-red-600'
-                }`}
-              >
-                {actionLoading[selectedLeave?._id] 
-                  ? 'Processing...' 
-                  : modalAction === 'approved' ? 'Approve' : 'Reject'
-                }
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </>
-  );
 }
+
+function StatCard({ label, value, icon, color, bgColor }) {
+  return (
+    <div className="bg-white p-6 rounded-[32px] border border-[#7A8B5E]/5 shadow-sm flex items-center gap-5">
+      <div className={`w-14 h-14 rounded-2xl ${bgColor} flex items-center justify-center shrink-0 ${color}`}>
+        {icon}
+      </div>
+      <div>
+        <p className="text-[10px] font-bold text-[#6B7280] uppercase tracking-widest">{label}</p>
+        <p className={`text-2xl font-black ${color} mt-1`}>{value}</p>
+      </div>
+    </div>
+  );
+}
