@@ -1,17 +1,8 @@
 
 import axios from "axios";
 
-const rawURL = process.env.NEXT_PUBLIC_PROD_API_URL;
-// Handle cases where the env var is missing, "undefined", or "null" (as strings)
-const isValid = rawURL && rawURL !== "undefined" && rawURL !== "null" && rawURL.startsWith("http");
-export const API_URL = isValid ? rawURL : "http://localhost:5224";
-
-if (typeof window !== "undefined") {
-  console.log("%c[API Config]", "color: #7A8B5E; font-weight: bold", "Using Base URL:", API_URL);
-}
-
 const api = axios.create({
-  baseURL: API_URL.replace(/\/$/, "") + "/api/parentauth",
+  baseURL: process.env.NEXT_PUBLIC_PROD_API_URL + "/api/parentauth",
   withCredentials: false,
 });
 

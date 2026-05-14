@@ -1,6 +1,8 @@
+// src/components/ProfileContext.js
 "use client";
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import api, { API_URL } from '@/lib/api';
+import axios from 'axios';
 
 const ProfileContext = createContext();
 
@@ -22,7 +24,15 @@ export const ProfileProvider = ({ children }) => {
       return;
     }
 
-    const response = await api.get(`/profile`);
+    const response = await axios.get(
+      `${process.env.NEXT_PUBLIC_PROD_API_URL}/api/parentauth/profile`,
+      {
+        headers: {
+          Authorization: `Bearer ${parentToken}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
 
     const { parentInfo } = response.data.profile;
     
@@ -35,7 +45,7 @@ export const ProfileProvider = ({ children }) => {
 
     // Set and save profile image
     if (parentInfo.profileImage) {
-      const imageUrl = `${API_URL}/${parentInfo.profileImage}`;
+      const imageUrl = `${process.env.NEXT_PUBLIC_PROD_API_URL}/${parentInfo.profileImage}`;
       setProfileImage(imageUrl);
       localStorage.setItem('parentProfileImage', imageUrl);
     } else {

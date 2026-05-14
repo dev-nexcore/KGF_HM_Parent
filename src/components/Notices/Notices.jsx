@@ -1,12 +1,11 @@
-"use client";
+'use client';
 
 import React, { useState, useEffect } from 'react';
-import api from '@/lib/api';
-import { Bell, Calendar, Mail, Eye, ChevronRight, X, AlertCircle } from 'lucide-react';
+import axios from 'axios';
 
 const statusStyles = {
-  Unread: "bg-emerald-50 text-emerald-600 border-emerald-100",
-  Read: "bg-gray-50 text-gray-400 border-gray-100",
+  Unread: "bg-green-500 text-white",
+  Read: "bg-orange-400 text-white",
 };
 
 export default function NoticesPage() {
@@ -21,20 +20,53 @@ export default function NoticesPage() {
     const fetchNotices = async () => {
       try {
         setLoading(true);
+        
+        // Get parent token
         const parentToken = localStorage.getItem('parentToken');
-        if (!parentToken) throw new Error('Parent token not found');
+        if (!parentToken) {
+          throw new Error('Parent token not found');
+        }
 
         const tokenPayload = JSON.parse(atob(parentToken.split('.')[1]));
         const studentId = tokenPayload.studentId;
+        if (!studentId) {
+          throw new Error('Student ID not found in token');
+        }
 
-        const response = await api.get(`/notices`, {
-          params: { studentId }
-        });
+        // Fetch notices using axios
+        const response = await axios.get(
+          `${process.env.NEXT_PUBLIC_PROD_API_URL}/api/parentauth/notices`,
+          {
+            params: { studentId },
+            headers: {
+              Authorization: `Bearer ${parentToken}`,
+              'Content-Type': 'application/json'
+            }
+          }
+        );
 
         const noticesData = response.data.notices || [];
-        setNotices(processNoticesData(noticesData));
+        
+        // Process and format the notices data
+        const formattedData = processNoticesData(noticesData);
+        setNotices(formattedData);
+        setDisplayedNotices(10); // Reset to show first 10 notices
+
       } catch (error) {
-        setError(error.message);
+        console.error('Error fetching notices:', error);
+        let errorMessage = 'Failed to load notices';
+        
+        if (error.response) {
+          // Server responded with error status
+          errorMessage = `Server error: ${error.response.status} - ${error.response.statusText}`;
+        } else if (error.request) {
+          // Request was made but no response received
+          errorMessage = 'Network error - unable to reach server';
+        } else {
+          // Something else happened
+          errorMessage = error.message;
+        }
+        setError(errorMessage);
       } finally {
         setLoading(false);
       }
@@ -43,133 +75,324 @@ export default function NoticesPage() {
     fetchNotices();
   }, []);
 
+  // Function to process raw notices data into display format
   const processNoticesData = (noticesData) => {
-    return noticesData.map(notice => ({
-      _id: notice._id,
-      date: new Date(notice.issueDate).toLocaleDateString('en-GB'),
-      subject: notice.title,
-      description: notice.message,
-      status: notice.readStatus || 'Unread',
-      template: notice.template,
-      recipientType: notice.recipientType
-    }));
+    return noticesData.map(notice => {
+      // Format date from ISO to DD-MM-YYYY
+      const issueDate = new Date(notice.issueDate).toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        timeZone: 'Asia/Kolkata'
+      });
+
+      return {
+        _id: notice._id,
+        date: issueDate,
+        subject: notice.title,
+        description: notice.message,
+        status: notice.readStatus || 'Unread', // Default to Unread if no readStatus
+        template: notice.template,
+        recipientType: notice.recipientType
+      };
+    });
   };
 
-  const handleNoticeClick = async (notice) => {
-    setSelectedNotice(notice);
-    setIsPopupOpen(true);
-    if (notice.status === 'Unread') {
-      try {
-        const parentToken = localStorage.getItem('parentToken');
-        await axios.patch(`${process.env.NEXT_PUBLIC_PROD_API_URL}/api/parentauth/notices/${notice._id}/read`, {}, {
-          headers: { Authorization: `Bearer ${parentToken}` }
-        });
-        setNotices(prev => prev.map(n => n._id === notice._id ? { ...n, status: 'Read' } : n));
-      } catch (err) { console.error(err); }
+  // Function to mark notice as read
+  const markAsRead = async (noticeId) => {
+    try {
+      const parentToken = localStorage.getItem('parentToken');
+      if (!parentToken) return;
+
+      await axios.patch(
+        `${process.env.NEXT_PUBLIC_PROD_API_URL}/api/parentauth/notices/${noticeId}/read`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${parentToken}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      // Update local state
+      setNotices(prevNotices => 
+        prevNotices.map(notice => 
+          notice._id === noticeId ? { ...notice, status: 'Read' } : notice
+        )
+      );
+    } catch (error) {
+      console.error('Error marking notice as read:', error);
     }
   };
 
-  if (loading) return (
-    <div className="min-h-screen bg-[#F8FAF5] flex items-center justify-center">
-      <div className="animate-spin rounded-full h-12 w-12 border-4 border-[#7A8B5E] border-t-transparent"></div>
-    </div>
-  );
+  // Function to handle notice click - opens popup and marks as read
+  const handleNoticeClick = async (notice) => {
+    setSelectedNotice(notice);
+    setIsPopupOpen(true);
+    
+    // Mark as read if it's unread
+    if (notice.status === 'Unread') {
+      await markAsRead(notice._id);
+    }
+  };
+
+  // Function to close popup
+  const closePopup = () => {
+    setIsPopupOpen(false);
+    setSelectedNotice(null);
+  };
+
+  // Function to show more notices
+  const showMoreNotices = () => {
+    setDisplayedNotices(prev => prev + 10);
+  };
+
+  // Get notices to display (limited by displayedNotices)
+  const noticesToDisplay = notices.slice(0, displayedNotices);
+  const hasMoreNotices = displayedNotices < notices.length;
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="space-y-6 p-2 sm:p-4 lg:p-6">
+        {/* Fixed header to match Dashboard styling */}
+        <div className="flex items-center ml-2 mb-4 sm:mb-6">
+          <div className="w-1 h-6 sm:h-7 bg-[#4F8DCF] mr-2 sm:mr-3"></div>
+          <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold">Notices</h2>
+        </div>
+        
+        <div className="bg-white rounded-xl border border-gray-300 p-8 shadow-md flex items-center justify-center min-h-[400px]">
+          <div className="flex flex-col items-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+            <p className="text-gray-600">Loading notices...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="space-y-6 p-2 sm:p-4 lg:p-6">
+        {/* Fixed header to match Dashboard styling */}
+        <div className="flex items-center ml-2 mb-4 sm:mb-6">
+          <div className="w-1 h-6 sm:h-7 bg-[#4F8DCF] mr-2 sm:mr-3"></div>
+          <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold">Notices</h2>
+        </div>
+        
+        <div className="bg-white rounded-xl border border-gray-300 p-8 shadow-md flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <div className="text-red-600 text-lg font-semibold mb-2">Error Loading Notices</div>
+            <p className="text-gray-600 mb-4">{error}</p>
+            <button 
+              onClick={() => window.location.reload()} 
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // No data state
+  if (notices.length === 0) {
+    return (
+      <div className="space-y-6 p-2 sm:p-4 lg:p-6">
+        {/* Fixed header to match Dashboard styling */}
+        <div className="flex items-center ml-2 mb-4 sm:mb-6">
+          <div className="w-1 h-6 sm:h-7 bg-[#4F8DCF] mr-2 sm:mr-3"></div>
+          <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold">Notices</h2>
+        </div>
+        
+        <div className="bg-white rounded-xl border border-gray-300 p-8 shadow-md flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <div className="text-gray-600 text-lg font-semibold mb-2">No Notices Found</div>
+            <p className="text-gray-500">No notices available at the moment.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-[#F8FAF5] p-4 sm:p-6 lg:p-8 space-y-8 font-sans">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
-        <div className="flex items-center gap-3">
-          <div className="w-1.5 h-8 bg-[#7A8B5E] rounded-full"></div>
-          <h2 className="text-2xl font-black text-[#1A1F16]">Institutional Notices</h2>
-        </div>
-        <div className="flex gap-4">
-          <StatBadge label="Total" count={notices.length} color="bg-white" textColor="text-[#7A8B5E]" />
-          <StatBadge label="Unread" count={notices.filter(n => n.status === 'Unread').length} color="bg-[#7A8B5E]" textColor="text-white" />
-        </div>
+    <div className="space-y-6 p-2 sm:p-4 lg:p-6">
+      {/* Fixed header to match Dashboard styling */}
+      <div className="flex items-center ml-2 mb-4 sm:mb-6">
+        <div className="w-1 h-6 sm:h-7 bg-[#4F8DCF] mr-2 sm:mr-3"></div>
+        <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold">Notices</h2>
       </div>
 
-      <div className="grid grid-cols-1 gap-4">
-        {notices.slice(0, displayedNotices).map((notice, i) => (
-          <div 
-            key={notice._id || i}
-            onClick={() => handleNoticeClick(notice)}
-            className="group bg-white p-6 rounded-[32px] border border-[#7A8B5E]/5 shadow-sm hover:shadow-md hover:border-[#7A8B5E]/20 transition-all cursor-pointer flex items-center gap-6"
-          >
-            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 ${notice.status === 'Unread' ? 'bg-[#7A8B5E]/10 text-[#7A8B5E]' : 'bg-gray-50 text-gray-400'}`}>
-              <Mail size={24} />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-3 mb-1">
-                <span className="text-[10px] font-black text-[#6B7280] uppercase tracking-widest flex items-center gap-1">
-                  <Calendar size={12} /> {notice.date}
-                </span>
-                <span className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest border ${statusStyles[notice.status]}`}>
-                  {notice.status}
-                </span>
-              </div>
-              <h3 className="text-base font-black text-[#1A1F16] truncate">{notice.subject}</h3>
-              <p className="text-sm text-[#6B7280] font-medium line-clamp-1">{notice.description}</p>
-            </div>
-            <div className="w-10 h-10 rounded-full border border-gray-100 flex items-center justify-center text-gray-300 group-hover:text-[#7A8B5E] group-hover:border-[#7A8B5E]/20 transition-all">
-              <ChevronRight size={20} />
-            </div>
+      {/* Summary Statistics */}
+      <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+          <div className="text-green-800 font-semibold">Unread Notices</div>
+          <div className="text-2xl font-bold text-green-600">
+            {notices.filter(notice => notice.status === 'Unread').length}
           </div>
-        ))}
+        </div>
+        <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+          <div className="text-orange-800 font-semibold">Read Notices</div>
+          <div className="text-2xl font-bold text-orange-600">
+            {notices.filter(notice => notice.status === 'Read').length}
+          </div>
+        </div>
       </div>
 
-      {displayedNotices < notices.length && (
-        <button 
-          onClick={() => setDisplayedNotices(prev => prev + 10)}
-          className="w-full py-4 rounded-2xl bg-white border border-[#7A8B5E]/10 text-xs font-black uppercase tracking-[0.2em] text-[#7A8B5E] hover:bg-[#F8FAF5] transition-all"
-        >
-          Load More Notices
-        </button>
+      {/* Outer box with shadow */}
+      <div className="bg-white rounded-xl border border-gray-300 p-3 shadow-inner shadow-black/30 sm:p-5 relative overflow-hidden">
+        <div className="absolute top-0 left-0 right-0 h-3 rounded-t-xl z-0" />
+
+        {/* Fixed-width table for all screen sizes */}
+        <div className="relative z-10">
+          <table className="w-full text-center border-collapse table-fixed">
+            <colgroup>
+              <col className="w-[20%] md:w-[15%]" />
+              <col className="w-[25%] md:w-[25%]" />
+              <col className="w-[40%] md:w-[45%]" />
+              <col className="w-[15%] md:w-[15%]" />
+            </colgroup>
+            <thead className="bg-[#D9D9D9] text-gray-700">
+              <tr>
+                <th className="py-2 px-1 sm:py-3 sm:px-4 text-center text-xs sm:text-sm">Date</th>
+                <th className="py-2 px-1 sm:py-3 sm:px-4 text-center text-xs sm:text-sm">Subject</th>
+                <th className="py-2 px-1 sm:py-3 sm:px-4 text-center text-xs sm:text-sm">Description</th>
+                <th className="py-2 px-1 sm:py-3 sm:px-4 text-center text-xs sm:text-sm">Status</th>
+              </tr>
+            </thead>
+            <tbody className="text-gray-800">
+              {noticesToDisplay.map((notice, idx) => (
+                <tr 
+                  key={notice._id || idx} 
+                  className="bg-white hover:bg-gray-50 transition border-b border-white cursor-pointer"
+                  onClick={() => handleNoticeClick(notice)}
+                >
+                  <td className="py-3 sm:py-4 sm:px-4 font-semibold text-xs sm:text-sm">
+                    <div className="break-words">
+                      {notice.date}
+                    </div>
+                  </td>
+                  <td className="py-3 px-1 sm:py-4 sm:px-4 font-semibold text-xs sm:text-sm">
+                    <div className="break-words line-clamp-2">
+                      {notice.subject}
+                    </div>
+                  </td>
+                  <td className="py-3 px-1 sm:py-4 sm:px-4 font-semibold text-xs sm:text-sm">
+                    <div className="break-words line-clamp-3 text-left sm:text-center">
+                      {notice.description}
+                    </div>
+                  </td>
+                  <td className="py-3 px-1 sm:py-4 sm:px-4">
+                    <span
+                      className={`inline-block px-1 sm:px-2 py-1 rounded text-xs font-semibold ${statusStyles[notice.status]}`}
+                    >
+                      {notice.status}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Show More Button */}
+      {hasMoreNotices && (
+        <div className="flex justify-center mt-6">
+          <button
+            onClick={showMoreNotices}
+            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium shadow-md hover:shadow-lg"
+          >
+            Show More ({notices.length - displayedNotices} remaining)
+          </button>
+        </div>
       )}
 
-      {/* ── Popup Modal ── */}
+      {/* Notice Popup Modal */}
       {isPopupOpen && selectedNotice && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-[#1A1F16]/40 backdrop-blur-sm" onClick={() => setIsPopupOpen(false)}></div>
-          <div className="relative bg-white w-full max-w-2xl rounded-[40px] shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300">
-            <div className="p-8 sm:p-10 space-y-8">
-              <div className="flex justify-between items-start">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2 text-[#7A8B5E]">
-                    <Bell size={16} />
-                    <span className="text-[10px] font-black uppercase tracking-[0.2em]">Official Notice</span>
-                  </div>
-                  <h3 className="text-2xl font-black text-[#1A1F16] leading-tight">{selectedNotice.subject}</h3>
+<div className="fixed inset-0 bg-black/30 backdrop-blur-md flex items-center justify-center z-50 p-4 transition-all duration-300 ease-in-out">
+
+
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            {/* Header */}
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 rounded-t-xl flex justify-between items-center">
+              <h3 className="text-xl font-bold text-gray-800">Notice Details</h3>
+              <button
+                onClick={closePopup}
+                className="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-full hover:bg-gray-100"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 space-y-4">
+              {/* Date and Status */}
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <p className="text-sm text-gray-600 mb-1">Date</p>
+                  <p className="font-semibold text-gray-800">{selectedNotice.date}</p>
                 </div>
-                <button onClick={() => setIsPopupOpen(false)} className="p-2 rounded-full hover:bg-gray-50 text-gray-400 transition-colors">
-                  <X size={24} />
+                <span
+                  className={`px-3 py-1 rounded-full text-sm font-semibold ${statusStyles[selectedNotice.status]}`}
+                >
+                  {selectedNotice.status}
+                </span>
+              </div>
+
+              {/* Subject */}
+              <div className="mb-4">
+                <p className="text-sm text-gray-600 mb-2">Subject</p>
+                <h4 className="text-lg font-semibold text-gray-800 leading-tight">
+                  {selectedNotice.subject}
+                </h4>
+              </div>
+
+              {/* Description */}
+              <div className="mb-6">
+                <p className="text-sm text-gray-600 mb-2">Description</p>
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <p className="text-gray-800 leading-relaxed whitespace-pre-wrap">
+                    {selectedNotice.description}
+                  </p>
+                </div>
+              </div>
+
+              {/* Additional Info */}
+              {(selectedNotice.template || selectedNotice.recipientType) && (
+                <div className="border-t border-gray-200 pt-4">
+                  <p className="text-sm text-gray-600 mb-2">Additional Information</p>
+                  <div className="space-y-2">
+                    {selectedNotice.template && (
+                      <p className="text-sm text-gray-700">
+                        <span className="font-medium">Template:</span> {selectedNotice.template}
+                      </p>
+                    )}
+                    {selectedNotice.recipientType && (
+                      <p className="text-sm text-gray-700">
+                        <span className="font-medium">Recipient Type:</span> {selectedNotice.recipientType}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="sticky bottom-0 bg-gray-50 px-6 py-4 rounded-b-xl border-t border-gray-200">
+              <div className="flex justify-end">
+                <button
+                  onClick={closePopup}
+                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                >
+                  Close
                 </button>
               </div>
-
-              <div className="flex items-center gap-6 py-4 border-y border-[#7A8B5E]/5">
-                <div>
-                  <p className="text-[10px] font-black text-[#6B7280] uppercase tracking-widest mb-1">Issue Date</p>
-                  <p className="text-sm font-black text-[#1A1F16]">{selectedNotice.date}</p>
-                </div>
-                <div>
-                  <p className="text-[10px] font-black text-[#6B7280] uppercase tracking-widest mb-1">Status</p>
-                  <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${statusStyles[selectedNotice.status]}`}>
-                    {selectedNotice.status}
-                  </span>
-                </div>
-              </div>
-
-              <div className="bg-[#F8FAF5] rounded-3xl p-8">
-                <p className="text-[#1A1F16] font-medium leading-relaxed whitespace-pre-wrap">
-                  {selectedNotice.description}
-                </p>
-              </div>
-
-              <button 
-                onClick={() => setIsPopupOpen(false)}
-                className="w-full py-4 rounded-2xl bg-[#7A8B5E] text-white text-xs font-black uppercase tracking-[0.2em] shadow-lg shadow-[#7A8B5E]/20"
-              >
-                Close Notice
-              </button>
             </div>
           </div>
         </div>
@@ -177,12 +400,3 @@ export default function NoticesPage() {
     </div>
   );
 }
-
-function StatBadge({ label, count, color, textColor }) {
-  return (
-    <div className={`${color} ${textColor} px-4 py-2 rounded-xl border border-[#7A8B5E]/10 shadow-sm flex items-center gap-3`}>
-      <span className="text-[10px] font-black uppercase tracking-widest">{label}</span>
-      <span className="text-sm font-black">{count}</span>
-    </div>
-  );
-}

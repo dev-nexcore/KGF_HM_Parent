@@ -1,12 +1,11 @@
 "use client";
 import { useState, useEffect } from "react";
-import { UserIcon } from "@heroicons/react/24/outline";
+import { FaIdCard, FaCreditCard, FaUserGraduate, FaFileInvoice, FaEye, FaArrowLeft, FaUser, FaFileAlt } from "react-icons/fa";
 import Link from 'next/link';
-import { ArrowLeft } from 'lucide-react';
 import axios from "axios";
-import Image from "next/image";
+import toast, { Toaster } from "react-hot-toast";
 
-export default function Documents() {
+export default function StudentDocuments() {
   const [studentData, setStudentData] = useState({
     firstName: "",
     lastName: "",
@@ -17,45 +16,15 @@ export default function Documents() {
     bedAllotment: "",
     lastCheckInDate: "",
     profileImage: null,
+    documents: null,
     loading: true,
     error: null,
   });
 
-  // ✅ helper to fetch photo from student-profile endpoint if not in dashboard
-  const fetchStudentPhoto = async (studentId, parentToken) => {
-    try {
-      const res = await axios.get(
-        `${process.env.NEXT_PUBLIC_PROD_API_URL}/api/parentauth/student-profile?studentId=${studentId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${parentToken}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      const profile = res.data.student;
-      let profileImageUrl = null;
-      if (profile?.profileImage) {
-        profileImageUrl = profile.profileImage;
-      } else if (profile?.photo) {
-        profileImageUrl = profile.photo;
-      }
-
-      if (profileImageUrl) {
-        setStudentData(prev => ({
-          ...prev,
-          profileImage: profileImageUrl,
-        }));
-      }
-    } catch (err) {
-      console.error("Error fetching profile photo:", err);
-    }
-  };
-
   useEffect(() => {
     const fetchStudentData = async () => {
       try {
+        setStudentData(prev => ({ ...prev, loading: true }));
         const parentToken = localStorage.getItem("parentToken");
         if (!parentToken) throw new Error("Parent token not found");
 
@@ -73,63 +42,29 @@ export default function Documents() {
           }
         );
 
-        const dashboardData = response.data;
-        const studentInfo = dashboardData.studentInfo;
-        const firstName = studentInfo.firstName || "";
-        const lastName = studentInfo.lastName || "";
-
-        const formatDate = (dateString) => {
-          if (!dateString) return "N/A";
-          const date = new Date(dateString);
-          return date.toLocaleDateString("en-IN", {
-            day: "2-digit",
-            month: "short",
-            year: "numeric",
-          });
-        };
-
-        // ✅ Prefer profileImage or photo from dashboard API
-        let profileImageUrl = null;
-        if (studentInfo.profileImage) {
-          profileImageUrl = studentInfo.profileImage;
-        } else if (studentInfo.photo) {
-          profileImageUrl = studentInfo.photo;
-        }
-
+        const { studentInfo } = response.data;
+        
         setStudentData({
-          firstName,
-          lastName,
+          firstName: studentInfo.firstName || "N/A",
+          lastName: studentInfo.lastName || "N/A",
           studentId: studentInfo.studentId || studentId,
           email: studentInfo.email || "N/A",
-          contactNumber: studentInfo.contactNumber || studentInfo.phone || "N/A",
-          roomNo: response.data.studentInfo.roomBedDetails.room,
-          bedAllotment: response.data.studentInfo.roomBedDetails.bedType,
-          lastCheckInDate: formatDate(studentInfo.lastCheckInDate),
-          profileImage: studentInfo.photo,
+          contactNumber: studentInfo.contactNumber || "N/A",
+          roomNo: studentInfo.roomBedDetails?.room || "Not Assigned",
+          bedAllotment: studentInfo.roomBedDetails?.bedType || "N/A",
+          lastCheckInDate: studentInfo.lastCheckInDate ? new Date(studentInfo.lastCheckInDate).toLocaleDateString('en-GB') : "N/A",
+          profileImage: studentInfo.profileImage || studentInfo.photo,
+          documents: studentInfo.documents,
           loading: false,
           error: null,
         });
 
-        // ✅ If no profile image from dashboard, fetch from profile endpoint
-        if (!profileImageUrl) {
-          await fetchStudentPhoto(studentId, parentToken);
-        }
       } catch (error) {
         console.error("Error fetching student details:", error);
-
-        let errorMessage = "Unknown error occurred";
-        if (error.response) {
-          errorMessage = error.response.data?.message || `Server error: ${error.response.status}`;
-        } else if (error.request) {
-          errorMessage = "Network error - unable to reach server";
-        } else {
-          errorMessage = error.message;
-        }
-
-        setStudentData((prev) => ({
+        setStudentData(prev => ({
           ...prev,
           loading: false,
-          error: errorMessage,
+          error: error.response?.data?.message || error.message,
         }));
       }
     };
@@ -137,201 +72,150 @@ export default function Documents() {
     fetchStudentData();
   }, []);
 
+  const handleViewDocument = (docId) => {
+    const parentToken = localStorage.getItem('parentToken');
+    if (!parentToken) {
+      toast.error("Session expired. Please login again.");
+      return;
+    }
+    const url = `${process.env.NEXT_PUBLIC_PROD_API_URL}/api/parentauth/student-document/${docId}?token=${parentToken}`;
+    window.open(url, '_blank');
+  };
+
   if (studentData.loading) {
     return (
-      <div className="space-y-6 p-2 sm:p-4 lg:p-6">
-        {/* Fixed header to match Dashboard styling */}
-        <div className="flex items-center ml-2 mb-4 sm:mb-6">
-          <div className="w-1 h-6 sm:h-7 bg-[#4F8DCF] mr-2 sm:mr-3"></div>
-          <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold">
-            Student Details
-          </h2>
-        </div>
-
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="text-lg">Loading student details...</div>
-        </div>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
     );
   }
 
-  if (studentData.error) {
-    return (
-      <div className="space-y-6 p-2 sm:p-4 lg:p-6">
-        {/* Fixed header to match Dashboard styling */}
-        <div className="flex items-center ml-2 mb-4 sm:mb-6">
-          <div className="w-1 h-6 sm:h-7 bg-[#4F8DCF] mr-2 sm:mr-3"></div>
-          <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold">
-            Student Details
-          </h2>
-        </div>
-
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="text-lg text-red-600">Error: {studentData.error}</div>
-        </div>
-      </div>
-    );
-  }
+  const documentList = [
+    { id: 'aadharCard', label: 'Aadhar Card', Icon: FaIdCard, filename: 'Aadhar Card.pdf' },
+    { id: 'panCard', label: 'PAN Card', Icon: FaCreditCard, filename: 'PAN Card.pdf' },
+    { id: 'studentIdCard', label: 'Student ID Card', Icon: FaUserGraduate, filename: 'Student ID Card.pdf' },
+    { id: 'feesReceipt', label: 'Latest Fee Receipt', Icon: FaFileInvoice, filename: 'Fee Receipt.pdf' }
+  ];
 
   return (
-    <div className="space-y-6 p-2 sm:p-4 lg:p-6">
-      <div className="flex items-center ml-2 mb-3 md:-mt-7">
-        <Link
-          href="/dashboard"
-          className="flex items-center text-sm text-black-600 hover:underline font-medium"
-        >
-          <ArrowLeft className="w-4 h-4 mr-1" />
+    <div className="space-y-6 p-2 sm:p-4 lg:p-6 bg-gray-50/30 min-h-screen">
+      <Toaster position="top-right" />
+      
+      {/* Navigation */}
+      <div className="flex items-center ml-2 mb-3 md:-mt-4">
+        <Link href="/dashboard" className="flex items-center text-sm text-gray-600 hover:text-blue-600 font-medium transition-colors">
+          <FaArrowLeft className="w-3 h-3 mr-2" />
           Back to Dashboard
         </Link>
       </div>
-      {/* Fixed header to match Dashboard styling */}
+
+      {/* Header */}
       <div className="flex items-center ml-2 mb-4 sm:mb-6">
         <div className="w-1 h-6 sm:h-7 bg-[#4F8DCF] mr-2 sm:mr-3"></div>
-        <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold">
-          Student Details
-        </h2>
+        <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-gray-800">Student Details</h2>
       </div>
 
-      {/* Profile & Basic Info */}
-      <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
-        {/* Profile Card - View Only for Parents */}
-        <div className="bg-[#B8C5A8] w-full lg:w-1/3 p-4 sm:p-6 rounded-xl shadow-md flex flex-col items-center justify-center min-h-[200px] sm:min-h-[250px]">
-          {/* Profile Image Container - Read Only */}
-          <div className="w-20 h-20 sm:w-24 sm:h-24 lg:w-28 lg:h-28 bg-white rounded-full mb-3 sm:mb-4 flex items-center justify-center relative overflow-hidden">
+      {/* Profile & Basic Info Grid */}
+      <div className="flex flex-col lg:flex-row gap-6">
+        {/* Profile Side Card */}
+        <div className="bg-[#A4B494] w-full lg:w-1/3 p-8 rounded-2xl shadow-lg shadow-[#A4B494]/20 flex flex-col items-center justify-center text-white">
+          <div className="w-28 h-28 sm:w-32 sm:h-32 bg-white rounded-full mb-6 flex items-center justify-center overflow-hidden border-4 border-white/30 shadow-xl">
             {studentData.profileImage ? (
-              <img
-                src={studentData.profileImage}
-                alt="Student Profile"
-                className="w-full h-full object-cover rounded-full"
-              />
+              <img src={studentData.profileImage} alt="Student" className="w-full h-full object-cover" />
             ) : (
-              <UserIcon className="w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 text-gray-600" />
+              <FaUser className="w-16 h-16 text-gray-300" />
             )}
           </div>
-
-          <h3 className="text-base sm:text-lg font-bold text-center">
-            {studentData.firstName} {studentData.lastName}
-          </h3>
-          <p className="text-xs sm:text-sm text-center">
-            ID: {studentData.studentId}
-          </p>
-
-          {/* Info message for parents when no profile image */}
-          {!studentData.profileImage && (
-            <p className="text-xs text-center text-gray-600 mt-2 italic px-2">
-              Profile photo can be uploaded from student panel
-            </p>
-          )}
+          <h3 className="text-xl font-bold mb-1">{studentData.firstName} {studentData.lastName}</h3>
+          <p className="text-sm opacity-90 font-medium mb-4">ID: {studentData.studentId}</p>
+          <div className="text-center text-xs opacity-75 italic bg-black/10 px-4 py-2 rounded-full">
+            Profile photo can be uploaded from student panel
+          </div>
         </div>
 
-        {/* Basic Info Card */}
-        <div className="bg-white w-full lg:w-2/3 rounded-xl shadow-md overflow-hidden">
-          <div className="bg-[#9CAD8F] px-4 py-2 sm:py-3 font-bold text-black text-sm sm:text-base">
+        {/* Info Grid Card */}
+        <div className="bg-white w-full lg:w-2/3 rounded-2xl shadow-md border border-gray-100 overflow-hidden">
+          <div className="bg-[#9CAD8F] px-6 py-4 font-bold text-white text-lg">
             Basic Information
           </div>
-          <div className="p-3 sm:p-4 text-xs sm:text-sm">
-            {/* Mobile: Single column, Tablet+: Two columns */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-2 sm:gap-y-3 gap-x-4">
-              <div className="flex flex-col sm:contents">
-                <p className="text-gray-500">First Name:</p>
-                <p className="font-bold mb-2 sm:mb-0">
-                  {studentData.firstName || "N/A"}
-                </p>
-              </div>
-              <div className="flex flex-col sm:contents">
-                <p className="text-gray-500">Last Name:</p>
-                <p className="font-bold mb-2 sm:mb-0">
-                  {studentData.lastName || "N/A"}
-                </p>
-              </div>
-              <div className="flex flex-col sm:contents">
-                <p className="text-gray-500">Email Address:</p>
-                <p className="font-bold break-all sm:break-normal mb-2 sm:mb-0">
-                  {studentData.email}
-                </p>
-              </div>
-              <div className="flex flex-col sm:contents">
-                <p className="text-gray-500">Contact Number:</p>
-                <p className="font-bold mb-2 sm:mb-0">
-                  {studentData.contactNumber}
-                </p>
-              </div>
-              <div className="flex flex-col sm:contents">
-                <p className="text-gray-500">Room Number:</p>
-                <p className="font-bold mb-2 sm:mb-0">{studentData.roomNo}</p>
-              </div>
-              <div className="flex flex-col sm:contents">
-                <p className="text-gray-500">Bed Allotment:</p>
-                <p className="font-bold mb-2 sm:mb-0">
-                  {studentData.bedAllotment}
-                </p>
-              </div>
-              <div className="flex flex-col sm:contents">
-                <p className="text-gray-500">Status:</p>
-                <p className="font-bold mb-2 sm:mb-0 text-green-600">
-                  {studentData.roomNo !== 'N/A' ? 'Allocated' : 'Not Allocated'}
-                </p>
-              </div>
-              <div className="flex flex-col sm:contents">
-                <p className="text-gray-500">Last Check-in:</p>
-                <p className="font-bold mb-2 sm:mb-0">
-                  05-08-25
-                </p>
-              </div>
+          <div className="p-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
+              {[
+                { label: 'First Name', value: studentData.firstName },
+                { label: 'Last Name', value: studentData.lastName },
+                { label: 'Email Address', value: studentData.email },
+                { label: 'Contact Number', value: studentData.contactNumber },
+                { label: 'Room Number', value: studentData.roomNo },
+                { label: 'Bed Allotment', value: studentData.bedAllotment },
+                { label: 'Status', value: studentData.roomNo !== 'Not Assigned' ? 'Allocated' : 'Pending', isStatus: true },
+                { label: 'Last Check-in', value: studentData.lastCheckInDate }
+              ].map((item, idx) => (
+                <div key={idx} className="flex justify-between py-2 border-b border-gray-50 last:border-0 sm:block sm:border-0 sm:py-0">
+                  <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider block mb-1">{item.label}</span>
+                  <span className={`font-bold text-sm sm:text-base ${item.isStatus ? (item.value === 'Allocated' ? 'text-green-600' : 'text-orange-500') : 'text-gray-800'}`}>
+                    {item.value}
+                  </span>
+                </div>
+              ))}
             </div>
           </div>
         </div>
       </div>
 
-      {/* Uploaded Documents */}
-      <div className="bg-white p-3 sm:p-4 rounded-2xl shadow-[0_-8px_16px_-4px_rgba(0,0,0,0.1)]">
-        <h3 className="font-bold mb-3 sm:mb-4 text-sm sm:text-base">
+      {/* Documents Section */}
+      <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100">
+        <h3 className="font-bold mb-6 text-lg text-gray-800 flex items-center gap-2">
+          <FaFileAlt className="w-5 h-5 text-[#9CAD8F]" />
           Uploaded Documents
         </h3>
 
-        {/* Desktop/Tablet Table View */}
-        <div className="hidden sm:block border rounded-xl overflow-hidden">
-          <div className="grid grid-cols-2 bg-[#f9f9f9] p-3 font-semibold border-b text-sm">
-            <p>Documents</p>
-            <p className="text-right">Action</p>
-          </div>
-          {[
-            "Birth Certificate.pdf",
-            "Adhar Card.pdf",
-            "Previous School LC.pdf",
-            "Medical records.pdf",
-          ].map((doc, index) => (
-            <div
-              key={index}
-              className="grid grid-cols-2 font-bold items-center border-t px-3 py-3 text-sm"
-            >
-              <p>{doc}</p>
-              <div className="flex justify-end">
-                <button className="bg-[#9CAD8F] text-black px-4 py-2 rounded-md hover:opacity-90 transition-opacity">
-                  View
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Mobile Card View */}
-        <div className="sm:hidden space-y-3">
-          {[
-            "Birth Certificate.pdf",
-            "Adhar Card.pdf",
-            "Previous School LC.pdf",
-            "Medical records.pdf",
-          ].map((doc, index) => (
-            <div key={index} className="border rounded-lg p-3 bg-[#f9f9f9]">
-              <div className="flex flex-col space-y-2">
-                <p className="font-bold text-sm break-all">{doc}</p>
-                <button className="bg-[#9CAD8F] text-black px-4 py-2 rounded-md hover:opacity-90 transition-opacity text-sm font-medium self-start">
-                  View
-                </button>
-              </div>
-            </div>
-          ))}
+        {/* Responsive Table */}
+        <div className="border border-gray-100 rounded-xl overflow-hidden">
+          <table className="w-full text-left border-collapse">
+            <thead className="bg-gray-50 text-gray-500 uppercase text-[10px] font-bold tracking-widest border-b">
+              <tr>
+                <th className="px-6 py-4">Document Type</th>
+                <th className="px-6 py-4 text-center">Status</th>
+                <th className="px-6 py-4 text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {documentList.map((doc, index) => {
+                const isUploaded = studentData.documents?.[doc.id]?.path;
+                return (
+                  <tr key={index} className="hover:bg-gray-50/50 transition-colors group">
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className={`p-2 rounded-lg bg-gray-100 text-gray-500 group-hover:bg-white group-hover:text-blue-500 transition-all`}>
+                          <doc.Icon className="w-4 h-4" />
+                        </div>
+                        <span className="font-bold text-sm text-gray-700">{doc.label}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-center">
+                      <span className={`px-3 py-1 rounded-full text-[10px] font-bold ${isUploaded ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'}`}>
+                        {isUploaded ? 'UPLOADED' : 'NOT FOUND'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      {isUploaded ? (
+                        <button 
+                          onClick={() => handleViewDocument(doc.id)}
+                          className="bg-[#9CAD8F] text-white px-5 py-2 rounded-lg hover:bg-[#8da087] transition-all text-xs font-bold shadow-md shadow-green-100 flex items-center gap-2 ml-auto"
+                        >
+                          <FaEye className="w-3 h-3" /> View
+                        </button>
+                      ) : (
+                        <button disabled className="bg-gray-100 text-gray-300 px-5 py-2 rounded-lg text-xs font-bold cursor-not-allowed ml-auto border border-gray-200">
+                          Unavailable
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>

@@ -1,6 +1,6 @@
+// src/app/layout.jsx
 import './globals.css';
 import { ProfileProvider } from "../components/ProfileContext";
-import Script from 'next/script';
 
 export const metadata = {
   title: {
@@ -15,16 +15,15 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className="bg-[#F8FAF5]">
-      <body className="min-h-screen antialiased">
-        <ProfileProvider>
-          {children}
-        </ProfileProvider>
-        <Script
-          id="razorpay-checkout-js"
-          src="https://checkout.razorpay.com/v1/checkout.js"
-        />
+    <html lang="en" className="bg-white">
+      <body className="bg-white min-h-screen antialiased">
+        <div className="bg-white min-h-screen">
+          <ProfileProvider>
+            {children}
+          </ProfileProvider>
+        </div>
+        <script src="https://checkout.razorpay.com/v1/checkout.js" async></script>
       </body>
     </html>
   );
-}
+}
