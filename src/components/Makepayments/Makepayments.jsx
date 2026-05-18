@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import toast, { Toaster } from 'react-hot-toast';
 
-export default function MakePaymentsPage() {
+export default function MakePaymentsPage({ onPayNowClick }) {
   const [fees, setFees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [payingId, setPayingId] = useState(null);
@@ -28,13 +28,16 @@ export default function MakePaymentsPage() {
       );
 
       const allInvoices = response.data.feesOverview.allInvoices || [];
-      const pendingInvoices = allInvoices.filter(inv => 
-        inv.status === 'Pending' || inv.status === 'Overdue'
-      );
+      const pendingInvoices = allInvoices.filter(inv => {
+        if (!inv.status) return false;
+        const s = inv.status.toLowerCase();
+        return s === 'pending' || s === 'overdue';
+      });
 
       setFees(pendingInvoices.map(inv => ({
         id: inv._id,
         type: inv.type,
+        invoiceType: inv.invoiceType, // raw enum: 'security_deposit' | 'hostel_fee' etc.
         dueDate: inv.dueDate ? new Date(inv.dueDate).toLocaleDateString('en-GB') : 'N/A',
         amount: inv.amount,
         status: inv.status,
@@ -187,7 +190,13 @@ export default function MakePaymentsPage() {
                     </td>
                     <td className="py-2 px-1 sm:py-3 sm:px-2 lg:py-4 lg:px-6 text-center">
                       <button 
-                        onClick={() => handlePayNow(fee)}
+                        onClick={() => {
+                          if (onPayNowClick) {
+                            onPayNowClick(fee);
+                          } else {
+                            handlePayNow(fee);
+                          }
+                        }}
                         disabled={payingId === fee.id}
                         className="bg-[#33cc33] hover:bg-[#28a428] text-white font-semibold px-2 py-1 sm:px-3 sm:py-1 rounded-md text-[10px] sm:text-xs lg:text-sm shadow disabled:opacity-50"
                       >

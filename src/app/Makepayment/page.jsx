@@ -7,17 +7,25 @@ import MakePaymentsPage from '@/components/Makepayments/Makepayments';
 import Payments from '@/components/Makepayments/Makepayment2';
 
 export default function Home() {
-  const [showPaymentForm, setShowPaymentForm] = useState(false);
+  const [selectedFee, setSelectedFee] = useState(null);
+
+  const handlePayNowClick = (fee) => {
+    setSelectedFee(fee);
+  };
+
+  const handleBack = () => {
+    setSelectedFee(null);
+  };
 
   return (
     <div className='flex'>
       <Sidebar />
       <div className='flex-1 min-h-screen'>
         <Navbar/>
-        {!showPaymentForm ? (
-          <MakePaymentsPage onPayNowClick={() => setShowPaymentForm(true)} />
+        {!selectedFee ? (
+          <MakePaymentsPage onPayNowClick={handlePayNowClick} />
         ) : (
-          <Payments />
+          <Payments fee={selectedFee} onBack={handleBack} />
         )}
       </div>
     </div>
