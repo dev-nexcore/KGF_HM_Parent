@@ -17,6 +17,11 @@ export default function LeaveManagementTable() {
   const [selectedLeave, setSelectedLeave] = useState(null);
   const [modalAction, setModalAction] = useState('');
   const [parentComment, setParentComment] = useState('');
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [viewLeave, setViewLeave] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [statusFilter, setStatusFilter] = useState(null);
+  const ROWS_PER_PAGE = 10;
 
   useEffect(() => {
     // Check if user came from email link and handle auto-login
@@ -185,83 +190,40 @@ export default function LeaveManagementTable() {
     setParentComment('');
   };
 
-  // Action buttons component
-const ProfessionalActionButtons = ({ leave }) => {
-  const [showDropdown, setShowDropdown] = useState(false);
+  // View modal handlers
+  const handleView = (leave) => {
+    setViewLeave(leave);
+    setShowViewModal(true);
+  };
 
-  if (leave.status !== 'PENDING') {
-    return (
-      <div className="flex justify-center items-center">
-        <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium border ${
-          leave.status === 'APPROVED' 
-            ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
-            : 'bg-red-50 text-red-700 border-red-200'
-        }`}>
-          <div className={`w-1.5 h-1.5 rounded-full ${
-            leave.status === 'APPROVED' ? 'bg-emerald-500' : 'bg-red-500'
-          }`}></div>
-          {leave.status === 'APPROVED' ? 'Approved' : 'Declined'}
-        </div>
-      </div>
-    );
-  }
+  const closeViewModal = () => {
+    setShowViewModal(false);
+    setViewLeave(null);
+  };
 
-  return (
-    <div className="relative flex justify-center">
-      <button
-        onClick={() => setShowDropdown(!showDropdown)}
-        className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-      >
-        Review
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
-      </button>
+  // Filter + Pagination logic
+  const filteredData = statusFilter
+    ? leaveData.filter(entry => entry.status === statusFilter)
+    : leaveData;
+  const totalPages = Math.ceil(filteredData.length / ROWS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ROWS_PER_PAGE;
+  const paginatedData = filteredData.slice(startIndex, startIndex + ROWS_PER_PAGE);
 
-      {showDropdown && (
-        <div className="absolute top-full mt-1 right-0 w-40 bg-white border border-gray-200 rounded-md shadow-lg z-10">
-          <button
-            onClick={() => {
-              handleLeaveAction(leave, 'approved');
-              setShowDropdown(false);
-            }}
-            disabled={actionLoading[leave._id]}
-            className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-700 flex items-center gap-2 disabled:opacity-50"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
-            Approve
-          </button>
-          <button
-            onClick={() => {
-              handleLeaveAction(leave, 'rejected');
-              setShowDropdown(false);
-            }}
-            disabled={actionLoading[leave._id]}
-            className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-red-50 hover:text-red-700 flex items-center gap-2 disabled:opacity-50"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-            Decline
-          </button>
-        </div>
-      )}
-    </div>
-  );
-};
+  const handleFilterClick = (status) => {
+    setStatusFilter(prev => prev === status ? null : status);
+    setCurrentPage(1);
+  };
 
   // Loading state
   if (loading) {
     return (
-      <div className="space-y-6 p-2 sm:p-4 lg:p-6">
+      <div className="h-[calc(100vh-64px)] flex flex-col p-2 sm:p-4 lg:p-6 overflow-hidden">
         <div className="flex items-center ml-2 mb-4 sm:mb-6">
           <div className="w-1 h-6 sm:h-7 bg-[#4F8DCF] mr-2 sm:mr-3"></div>
           <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold">Leave Management</h2>
         </div>
         
-        <div className="w-full bg-white rounded-2xl shadow-inner border border-gray-100 p-8 flex items-center justify-center min-h-[400px]">
+        <div className="flex-1 w-full bg-white rounded-2xl shadow-inner border border-gray-100 flex items-center justify-center">
           <div className="flex flex-col items-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
             <p className="text-gray-600">Loading leave data...</p>
@@ -274,13 +236,13 @@ const ProfessionalActionButtons = ({ leave }) => {
   // Error state
   if (error) {
     return (
-      <div className="space-y-6 p-2 sm:p-4 lg:p-6">
+      <div className="h-[calc(100vh-64px)] flex flex-col p-2 sm:p-4 lg:p-6 overflow-hidden">
         <div className="flex items-center ml-2 mb-4 sm:mb-6">
           <div className="w-1 h-6 sm:h-7 bg-[#4F8DCF] mr-2 sm:mr-3"></div>
           <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold">Leave Management</h2>
         </div>
         
-        <div className="w-full bg-white rounded-2xl shadow-inner border border-gray-100 p-8 flex items-center justify-center min-h-[400px]">
+        <div className="flex-1 w-full bg-white rounded-2xl shadow-inner border border-gray-100 flex items-center justify-center">
           <div className="text-center">
             <div className="text-red-600 text-lg font-semibold mb-2">Error Loading Data</div>
             <p className="text-gray-600">{error}</p>
@@ -299,13 +261,13 @@ const ProfessionalActionButtons = ({ leave }) => {
   // No data state
   if (leaveData.length === 0) {
     return (
-      <div className="space-y-6 p-2 sm:p-4 lg:p-6">
+      <div className="h-[calc(100vh-64px)] flex flex-col p-2 sm:p-4 lg:p-6 overflow-hidden">
         <div className="flex items-center ml-2 mb-4 sm:mb-6">
           <div className="w-1 h-6 sm:h-7 bg-[#4F8DCF] mr-2 sm:mr-3"></div>
           <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold">Leave Management</h2>
         </div>
         
-        <div className="w-full bg-white rounded-2xl shadow-inner border border-gray-100 p-8 flex items-center justify-center min-h-[400px]">
+        <div className="flex-1 w-full bg-white rounded-2xl shadow-inner border border-gray-100 flex items-center justify-center">
           <div className="text-center">
             <div className="text-gray-600 text-lg font-semibold mb-2">No Leave Records Found</div>
             <p className="text-gray-500">No leave applications found for this student.</p>
@@ -317,179 +279,357 @@ const ProfessionalActionButtons = ({ leave }) => {
 
   return (
     <>
-      <div className="space-y-6 p-2 sm:p-4 lg:p-6">
-        <div className="flex items-center ml-2 mb-4 sm:mb-6">
+      <div className="h-[calc(100vh-64px)] flex flex-col p-2 sm:p-4 lg:p-6 overflow-hidden">
+        <div className="flex items-center ml-2 mb-3 flex-shrink-0">
           <div className="w-1 h-6 sm:h-7 bg-[#4F8DCF] mr-2 sm:mr-3"></div>
-          <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold">Leave Management</h2>
+          <h2 className="text-sm sm:text-base md:text-lg lg:text-xl font-bold">Leave Management</h2>
         </div>
 
-        {/* Summary Statistics */}
-        <div className="mb-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-            <div className="text-green-800 font-semibold">Approved Leaves</div>
-            <div className="text-2xl font-bold text-green-600">
+        {/* Summary Statistics - Clickable */}
+        <div className="mb-3 grid grid-cols-4 gap-3 flex-shrink-0">
+          <div
+            onClick={() => { setStatusFilter(null); setCurrentPage(1); }}
+            className={`bg-blue-50 border rounded-lg px-4 py-3 flex items-center justify-between cursor-pointer transition-all hover:shadow-md ${
+              statusFilter === null ? 'border-blue-500 ring-2 ring-blue-300 shadow-md' : 'border-blue-200'
+            }`}
+          >
+            <span className="text-blue-800 font-semibold text-sm">All</span>
+            <span className="text-2xl font-bold text-blue-600">
+              {leaveData.length}
+            </span>
+          </div>
+          <div
+            onClick={() => handleFilterClick('APPROVED')}
+            className={`bg-green-50 border rounded-lg px-4 py-3 flex items-center justify-between cursor-pointer transition-all hover:shadow-md ${
+              statusFilter === 'APPROVED' ? 'border-green-500 ring-2 ring-green-300 shadow-md' : 'border-green-200'
+            }`}
+          >
+            <span className="text-green-800 font-semibold text-sm">Approved</span>
+            <span className="text-2xl font-bold text-green-600">
               {leaveData.filter(entry => entry.status === 'APPROVED').length}
-            </div>
+            </span>
           </div>
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-            <div className="text-red-800 font-semibold">Rejected Leaves</div>
-            <div className="text-2xl font-bold text-red-600">
+          <div
+            onClick={() => handleFilterClick('REJECTED')}
+            className={`bg-red-50 border rounded-lg px-4 py-3 flex items-center justify-between cursor-pointer transition-all hover:shadow-md ${
+              statusFilter === 'REJECTED' ? 'border-red-500 ring-2 ring-red-300 shadow-md' : 'border-red-200'
+            }`}
+          >
+            <span className="text-red-800 font-semibold text-sm">Rejected</span>
+            <span className="text-2xl font-bold text-red-600">
               {leaveData.filter(entry => entry.status === 'REJECTED').length}
-            </div>
+            </span>
           </div>
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-            <div className="text-yellow-800 font-semibold">Pending Leaves</div>
-            <div className="text-2xl font-bold text-yellow-600">
+          <div
+            onClick={() => handleFilterClick('PENDING')}
+            className={`bg-yellow-50 border rounded-lg px-4 py-3 flex items-center justify-between cursor-pointer transition-all hover:shadow-md ${
+              statusFilter === 'PENDING' ? 'border-yellow-500 ring-2 ring-yellow-300 shadow-md' : 'border-yellow-200'
+            }`}
+          >
+            <span className="text-yellow-800 font-semibold text-sm">Pending</span>
+            <span className="text-2xl font-bold text-yellow-600">
               {leaveData.filter(entry => entry.status === 'PENDING').length}
-            </div>
+            </span>
           </div>
         </div>
 
         {/* Main Table Container */}
-        <div className="w-full bg-white rounded-2xl shadow-inner border border-gray-100 overflow-hidden" style={{ boxShadow: 'inset 0 4px 10px rgba(0, 0, 0, 0.1)' }}>
-          <div className="w-full flex flex-col items-center p-4 md:p-5 pb-4">
-            
-            {/* Improved Mobile View with Better Spacing */}
-            <div className="md:hidden w-full">
-              {/* Mobile Header - More Spacious */}
-              <div className="p-4 mb-4 rounded-lg" style={{ backgroundColor: '#D9D9D9' }}>
-                <div className="grid grid-cols-4 gap-4 text-sm font-bold text-gray-800">
-                  <div className="text-center">Type</div>
-                  <div className="text-center">From</div>
-                  <div className="text-center">To</div>
-                  <div className="text-center">Action</div>
-                </div>
+        <div className="flex-1 w-full bg-white rounded-2xl shadow-inner border border-gray-100 overflow-hidden flex flex-col" style={{ boxShadow: 'inset 0 4px 10px rgba(0, 0, 0, 0.1)' }}>
+          
+          {/* Mobile View */}
+          <div className="md:hidden flex-1 overflow-y-auto p-4">
+            {/* Mobile Header */}
+            <div className="p-3 mb-3 rounded-lg sticky top-0 z-10" style={{ backgroundColor: '#D9D9D9' }}>
+              <div className="grid grid-cols-5 gap-2 text-xs font-bold text-gray-800">
+                <div className="text-center">Sr</div>
+                <div className="text-center">Type</div>
+                <div className="text-center">From</div>
+                <div className="text-center">To</div>
+                <div className="text-center">Action</div>
               </div>
+            </div>
 
-              {/* Mobile Cards with Better Spacing */}
-              <div className="space-y-4">
-                {leaveData.map((row, i) => (
-                  <div
-                    key={row._id || i}
-                    className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden"
-                  >
-                    {/* Top Section - Type, Dates, Action */}
-                    <div className="p-4">
-                      <div className="grid grid-cols-4 gap-3 items-center">
-                        <div className="text-center">
-                          <div className="text-sm font-bold text-gray-800 leading-tight">
-                            {row.type}
+            {/* Mobile Cards */}
+            <div className="space-y-3">
+              {paginatedData.map((row, i) => (
+                <div
+                  key={row._id || i}
+                  className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden"
+                >
+                  <div className="p-3">
+                    <div className="grid grid-cols-5 gap-2 items-center">
+                      <div className="text-center text-sm font-bold text-gray-800">
+                        {startIndex + i + 1}
+                      </div>
+                      <div className="text-center text-xs font-semibold text-gray-700">
+                        {row.type}
+                      </div>
+                      <div className="text-center text-xs text-gray-600">
+                        {row.from}
+                      </div>
+                      <div className="text-center text-xs text-gray-600">
+                        {row.to}
+                      </div>
+                      <div className="flex flex-col items-center gap-1">
+                        <button
+                          onClick={() => handleView(row)}
+                          className="px-2 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600 transition-colors w-full"
+                        >
+                          View
+                        </button>
+                        {row.status === 'PENDING' && (
+                          <div className="flex gap-1 w-full">
+                            <button
+                              onClick={() => handleLeaveAction(row, 'approved')}
+                              disabled={actionLoading[row._id]}
+                              className="flex-1 px-1 py-1 bg-green-500 text-white text-xs rounded hover:bg-green-600 transition-colors disabled:opacity-50"
+                            >
+                              ✓
+                            </button>
+                            <button
+                              onClick={() => handleLeaveAction(row, 'rejected')}
+                              disabled={actionLoading[row._id]}
+                              className="flex-1 px-1 py-1 bg-red-500 text-white text-xs rounded hover:bg-red-600 transition-colors disabled:opacity-50"
+                            >
+                              ✕
+                            </button>
                           </div>
-                        </div>
-                        <div className="text-center">
-                          <div className="text-xs font-semibold text-gray-600 leading-tight break-words">
-                            {row.from}
-                          </div>
-                        </div>
-                        <div className="text-center">
-                          <div className="text-xs font-semibold text-gray-600 leading-tight break-words">
-                            {row.to}
-                          </div>
-                        </div>
-                        <div className="flex justify-center">
-                          <div className="scale-90">
-                            <ProfessionalActionButtons leave={row} />
-                          </div>
-                        </div>
+                        )}
                       </div>
                     </div>
-                    
-                    {/* Bottom Section - Reason and Status */}
-                    <div className="px-4 pb-4">
-                      <div className="border-t border-gray-100 pt-3 space-y-3">
-                        {/* Reason */}
-                        <div className="bg-gray-50 p-3 rounded-md">
-                          <div className="text-xs font-semibold text-gray-500 mb-1">Reason:</div>
-                          <div className="text-sm font-medium text-gray-700 leading-relaxed">
-                            {row.reason}
-                          </div>
-                        </div>
-                        
-                        {/* Status */}
-                        <div className="text-center">
+                    {/* Status badge below */}
+                    <div className="mt-2 text-center">
+                      <span className={`inline-block px-3 py-1 text-xs font-semibold rounded-sm ${statusColors[row.status]}`}>
+                        {row.status}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Desktop Table */}
+          <div className="hidden md:flex flex-col flex-1 overflow-hidden">
+            <div className="overflow-y-auto flex-1">
+              <table className="w-full">
+                <thead className="sticky top-0 z-10">
+                  <tr style={{ backgroundColor: '#D9D9D9' }}>
+                    <th className="py-3 md:py-4 px-4 md:px-6 font-bold text-gray-800 text-center text-sm md:text-base">
+                      Sr No
+                    </th>
+                    <th className="py-3 md:py-4 px-4 md:px-6 font-bold text-gray-800 text-center text-sm md:text-base">
+                      Leave Type
+                    </th>
+                    <th className="py-3 md:py-4 px-4 md:px-6 font-bold text-gray-800 text-center text-sm md:text-base">
+                      From Date
+                    </th>
+                    <th className="py-3 md:py-4 px-4 md:px-6 font-bold text-gray-800 text-center text-sm md:text-base">
+                      To Date
+                    </th>
+                    <th className="py-3 md:py-4 px-4 md:px-6 font-bold text-gray-800 text-center text-sm md:text-base">
+                      Status
+                    </th>
+                    <th className="py-3 md:py-4 px-4 md:px-6 font-bold text-gray-800 text-center text-sm md:text-base">
+                      Action
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paginatedData.map((row, i) => (
+                    <tr
+                      key={row._id || i}
+                      className="hover:bg-gray-50 transition-colors border-b border-gray-100"
+                    >
+                      <td className="py-3 md:py-4 px-4 md:px-6 font-semibold text-gray-700 text-center text-xs md:text-sm">
+                        {startIndex + i + 1}
+                      </td>
+                      <td className="py-3 md:py-4 px-4 md:px-6 font-semibold text-gray-700 text-center text-xs md:text-sm">
+                        {row.type}
+                      </td>
+                      <td className="py-3 md:py-4 px-4 md:px-6 font-semibold text-gray-700 text-center text-xs md:text-sm">
+                        {row.from}
+                      </td>
+                      <td className="py-3 md:py-4 px-4 md:px-6 font-semibold text-gray-700 text-center text-xs md:text-sm">
+                        {row.to}
+                      </td>
+                      <td className="py-3 md:py-4 px-4 md:px-6">
+                        <div className="flex justify-center items-center">
                           <span
-                            className={`inline-block px-4 py-2 text-xs font-semibold rounded-md ${statusColors[row.status]}`}
+                            className={`flex items-center justify-center w-[80px] md:w-[90px] h-[32px] md:h-[36px] font-semibold text-xs md:text-sm rounded-sm ${statusColors[row.status]}`}
                           >
                             {row.status}
                           </span>
                         </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+                      </td>
+                      <td className="py-3 md:py-4 px-4 md:px-6">
+                        <div className="flex justify-center items-center gap-2">
+                          {/* View Icon Button */}
+                          <button
+                            onClick={() => handleView(row)}
+                            className="p-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors shadow-sm"
+                            title="View Details"
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                          </button>
 
-            {/* Desktop Table - Unchanged */}
-            <div className="hidden md:block w-full max-w-none lg:max-w-6xl xl:max-w-7xl">
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[700px]">
-                  <thead>
-                    <tr style={{ backgroundColor: '#D9D9D9' }}>
-                      <th className="py-3 md:py-4 px-4 md:px-6 font-bold text-gray-800 text-center text-base md:text-lg">
-                        Leave Type
-                      </th>
-                      <th className="py-3 md:py-4 px-4 md:px-6 font-bold text-gray-800 text-center text-base md:text-lg">
-                        From Date
-                      </th>
-                      <th className="py-3 md:py-4 px-4 md:px-6 font-bold text-gray-800 text-center text-base md:text-lg">
-                        To Date
-                      </th>
-                      <th className="py-3 md:py-4 px-4 md:px-6 font-bold text-gray-800 text-center text-base md:text-lg">
-                        Reason
-                      </th>
-                      <th className="py-3 md:py-4 px-4 md:px-6 font-bold text-gray-800 text-center text-base md:text-lg">
-                        Status
-                      </th>
-                      <th className="py-3 md:py-4 px-4 md:px-6 font-bold text-gray-800 text-center text-base md:text-lg">
-                        Action
-                      </th>
+                          {/* Approve / Reject icon buttons for PENDING */}
+                          {row.status === 'PENDING' && (
+                            <>
+                              <button
+                                onClick={() => handleLeaveAction(row, 'approved')}
+                                disabled={actionLoading[row._id]}
+                                className="p-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                title="Approve"
+                              >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                </svg>
+                              </button>
+                              <button
+                                onClick={() => handleLeaveAction(row, 'rejected')}
+                                disabled={actionLoading[row._id]}
+                                className="p-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                title="Reject"
+                              >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {leaveData.map((row, i) => (
-                      <tr
-                        key={row._id || i}
-                        className="hover:bg-gray-50 transition-colors"
-                      >
-                        <td className="py-3 md:py-4 px-4 md:px-6 font-bold text-gray-700 text-center text-sm md:text-base">
-                          {row.type}
-                        </td>
-                        <td className="py-3 md:py-4 px-4 md:px-6 font-bold text-gray-700 text-center text-sm md:text-base">
-                          {row.from}
-                        </td>
-                        <td className="py-3 md:py-4 px-4 md:px-6 font-bold text-gray-700 text-center text-sm md:text-base">
-                          {row.to}
-                        </td>
-                        <td className="py-3 md:py-4 px-4 md:px-6 font-bold text-gray-700 text-center text-sm md:text-base">
-                          {row.reason}
-                        </td>
-                        <td className="py-3 md:py-4 px-4 md:px-6">
-                          <div className="flex justify-center items-center">
-                            <span
-                              className={`flex items-center justify-center w-[90px] md:w-[100px] h-[36px] md:h-[40px] font-semibold text-xs md:text-sm rounded-sm ${statusColors[row.status]}`}
-                            >
-                              {row.status}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="py-3 md:py-4 px-4 md:px-6">
-                          <ProfessionalActionButtons leave={row} />
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-t border-gray-200 bg-gray-50 rounded-b-2xl">
+              <div className="text-sm text-gray-600">
+                Showing {startIndex + 1} - {Math.min(startIndex + ROWS_PER_PAGE, filteredData.length)} of {filteredData.length}
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                  className="px-3 py-1.5 text-sm font-medium rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-100 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  Previous
+                </button>
+                {Array.from({ length: totalPages }, (_, idx) => idx + 1).map(page => (
+                  <button
+                    key={page}
+                    onClick={() => setCurrentPage(page)}
+                    className={`w-8 h-8 text-sm font-medium rounded-md transition-colors ${
+                      currentPage === page
+                        ? 'bg-blue-500 text-white shadow-sm'
+                        : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-100'
+                    }`}
+                  >
+                    {page}
+                  </button>
+                ))}
+                <button
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                  className="px-3 py-1.5 text-sm font-medium rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-100 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Confirmation Modal */}
-      {showModal && (
-<div className="fixed inset-0 bg-black/30 backdrop-blur-md flex items-center justify-center z-50 p-4 transition-all duration-300 ease-in-out">
+      {/* View Details Modal */}
+      {showViewModal && viewLeave && (
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-md flex items-center justify-center z-50 p-4 transition-all duration-300 ease-in-out">
+          <div className="bg-white rounded-lg max-w-lg w-full p-6 shadow-2xl">
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Leave Details
+              </h3>
+              <button
+                onClick={closeViewModal}
+                className="p-1 rounded-full hover:bg-gray-100 transition-colors"
+              >
+                <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
 
+            <div className="space-y-4">
+              {/* Leave Type */}
+              <div className="flex items-center justify-between py-3 border-b border-gray-100">
+                <span className="text-sm font-medium text-gray-500">Leave Type</span>
+                <span className="text-sm font-bold text-gray-800">{viewLeave.type}</span>
+              </div>
+
+              {/* From Date */}
+              <div className="flex items-center justify-between py-3 border-b border-gray-100">
+                <span className="text-sm font-medium text-gray-500">From Date</span>
+                <span className="text-sm font-bold text-gray-800">{viewLeave.from}</span>
+              </div>
+
+              {/* To Date */}
+              <div className="flex items-center justify-between py-3 border-b border-gray-100">
+                <span className="text-sm font-medium text-gray-500">To Date</span>
+                <span className="text-sm font-bold text-gray-800">{viewLeave.to}</span>
+              </div>
+
+              {/* Duration */}
+              <div className="flex items-center justify-between py-3 border-b border-gray-100">
+                <span className="text-sm font-medium text-gray-500">Duration</span>
+                <span className="text-sm font-bold text-gray-800">{viewLeave.duration} day(s)</span>
+              </div>
+
+              {/* Status */}
+              <div className="flex items-center justify-between py-3 border-b border-gray-100">
+                <span className="text-sm font-medium text-gray-500">Status</span>
+                <span className={`inline-block px-3 py-1 text-xs font-semibold rounded-sm ${statusColors[viewLeave.status]}`}>
+                  {viewLeave.status}
+                </span>
+              </div>
+
+              {/* Reason */}
+              <div className="py-3">
+                <span className="text-sm font-medium text-gray-500 block mb-2">Reason</span>
+                <div className="bg-gray-50 p-3 rounded-lg border border-gray-100 overflow-hidden">
+                  <p className="text-sm font-medium text-gray-700 leading-relaxed break-all" style={{ overflowWrap: 'break-word', wordBreak: 'break-all' }}>
+                    {viewLeave.reason}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-5 flex justify-end">
+              <button
+                onClick={closeViewModal}
+                className="px-5 py-2 bg-gray-100 text-gray-700 font-medium rounded-md hover:bg-gray-200 transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation Modal (Approve/Reject) */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-md flex items-center justify-center z-50 p-4 transition-all duration-300 ease-in-out">
           <div className="bg-white rounded-lg max-w-md w-full p-6">
             <h3 className="text-lg font-bold mb-4">
               {modalAction === 'approved' ? 'Approve Leave Request' : 'Reject Leave Request'}
