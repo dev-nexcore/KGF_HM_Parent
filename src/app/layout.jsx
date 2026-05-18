@@ -8,9 +8,6 @@ export const metadata = {
     template: "%s | Parent Portal",
   },
   description: "Parent portal dashboard",
-  icons: {
-    icon: "/favicon.ico"
-  },
 };
 
 export default function RootLayout({ children }) {
