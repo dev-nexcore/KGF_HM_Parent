@@ -184,7 +184,7 @@ export default function MakePaymentsPage({ onPayNowClick }) {
                       <div className="break-words">₹ {fee.amount.toLocaleString()}</div>
                     </td>
                     <td className="py-2 px-1 sm:py-3 sm:px-2 lg:py-4 lg:px-6 text-center">
-                      <span className={`${fee.status === 'Overdue' ? 'bg-red-500' : 'bg-[#ffa726]'} text-white px-2 py-1 sm:px-3 sm:py-1 rounded-md text-[10px] sm:text-xs lg:text-sm font-semibold`}>
+                      <span className={`${fee.status === 'Overdue' ? 'bg-red-500' : fee.status === 'Pending Verification' ? 'bg-blue-500' : 'bg-[#ffa726]'} text-white px-2 py-1 sm:px-3 sm:py-1 rounded-md text-[10px] sm:text-xs lg:text-sm font-semibold`}>
                         {fee.status}
                       </span>
                     </td>
@@ -197,10 +197,10 @@ export default function MakePaymentsPage({ onPayNowClick }) {
                             handlePayNow(fee);
                           }
                         }}
-                        disabled={payingId === fee.id}
+                        disabled={payingId === fee.id || fee.status === 'Pending Verification'}
                         className="bg-[#33cc33] hover:bg-[#28a428] text-white font-semibold px-2 py-1 sm:px-3 sm:py-1 rounded-md text-[10px] sm:text-xs lg:text-sm shadow disabled:opacity-50"
                       >
-                        {payingId === fee.id ? 'Processing...' : 'Pay Now'}
+                        {payingId === fee.id ? 'Processing...' : fee.status === 'Pending Verification' ? 'Verifying...' : 'Pay Now'}
                       </button>
                     </td>
                   </tr>
