@@ -125,8 +125,8 @@ export default function AttendancePage() {
           date: dateStr,
           time: timeStr,
           direction: 'IN',
-          deviceName: 'Student App',
-          verificationType: 'Selfie',
+          deviceName: entry.checkInDevice || 'Student App',
+          verificationType: entry.checkInVerification || 'Selfie',
           employeeCode: entry.studentId || 'N/A',
           status: 'Present',
           originalTimestamp: checkInTime
@@ -166,8 +166,8 @@ export default function AttendancePage() {
           date: dateStr,
           time: timeStr,
           direction: 'OUT',
-          deviceName: 'Student App',
-          verificationType: 'Selfie',
+          deviceName: entry.checkOutDevice || entry.checkInDevice || 'Student App',
+          verificationType: entry.checkOutVerification || entry.checkInVerification || 'Selfie',
           employeeCode: entry.studentId || 'N/A',
           status: 'Out',
           originalTimestamp: checkOutTime

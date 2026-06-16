@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { jsPDF } from "jspdf";
 
 const statusColors = {
   Paid: "bg-green-500 text-white",
@@ -80,7 +79,8 @@ export default function FeesSection() {
     fetchFeesData();
   }, []);
 
-  const downloadReceipt = (row) => {
+  const downloadReceipt = async (row) => {
+    const { jsPDF } = await import("jspdf");
     const doc = new jsPDF({ unit: 'pt', format: 'a4' });
     const pageW = doc.internal.pageSize.getWidth();
     const pageH = doc.internal.pageSize.getHeight();
