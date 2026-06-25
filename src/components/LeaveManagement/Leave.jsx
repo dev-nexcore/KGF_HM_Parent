@@ -21,7 +21,15 @@ export default function LeaveManagementTable() {
   const [viewLeave, setViewLeave] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [dateFilter, setDateFilter] = useState('');
   const ROWS_PER_PAGE = 10;
+  
+  const clearFilters = () => {
+    setStatusFilter(null);
+    setSearchQuery('');
+    setDateFilter('');
+  };
 
   useEffect(() => {
     // Check if user came from email link and handle auto-login
@@ -119,7 +127,9 @@ export default function LeaveManagementTable() {
 
       return {
         _id: leave._id,
-        type: leave.leaveType,
+        type: leave.leaveType === 'Others' && leave.otherLeaveType ? `Others (${leave.otherLeaveType})` : leave.leaveType,
+        startDate: leave.startDate,
+        endDate: leave.endDate,
         from: startDate,
         to: endDate,
         reason: leave.reason,
@@ -202,9 +212,32 @@ export default function LeaveManagementTable() {
   };
 
   // Filter + Pagination logic
-  const filteredData = statusFilter
-    ? leaveData.filter(entry => entry.status === statusFilter)
-    : leaveData;
+  const filteredData = leaveData.filter(entry => {
+    let matchStatus = true;
+    if (statusFilter) {
+      matchStatus = entry.status === statusFilter;
+    }
+    
+    let matchSearch = true;
+    if (searchQuery) {
+       matchSearch = (entry.type || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
+                     (entry.reason || '').toLowerCase().includes(searchQuery.toLowerCase());
+    }
+
+    let matchDate = true;
+    if (dateFilter) {
+      const filterD = new Date(dateFilter);
+      const filterEnd = new Date(dateFilter);
+      filterEnd.setHours(23, 59, 59, 999);
+      
+      const reqStart = entry.startDate ? new Date(entry.startDate) : new Date(0);
+      const reqEnd = entry.endDate ? new Date(entry.endDate) : reqStart;
+      
+      matchDate = (filterD <= reqEnd) && (filterEnd >= reqStart);
+    }
+    
+    return matchStatus && matchSearch && matchDate;
+  });
   const totalPages = Math.ceil(filteredData.length / ROWS_PER_PAGE);
   const startIndex = (currentPage - 1) * ROWS_PER_PAGE;
   const paginatedData = filteredData.slice(startIndex, startIndex + ROWS_PER_PAGE);
@@ -330,6 +363,96 @@ export default function LeaveManagementTable() {
             <span className="text-2xl font-bold text-yellow-600">
               {leaveData.filter(entry => entry.status === 'PENDING').length}
             </span>
+          </div>
+        </div>
+
+        {/* ── FILTER BAR ── */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-6">
+          <div className="flex items-center gap-2 px-5 py-4 border-b border-gray-100 bg-gray-50/60">
+            <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" />
+            </svg>
+            <h2 className="text-sm font-semibold text-gray-600 tracking-wide uppercase">Filter Leave Requests</h2>
+          </div>
+
+          <div className="p-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Search */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Search</label>
+              <div className="relative">
+                <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 105 11a6 6 0 0012 0z" />
+                </svg>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Leave Type or Reason"
+                  className="w-full bg-gray-50 border border-gray-200 rounded-lg pl-9 pr-3 py-2.5 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                />
+              </div>
+            </div>
+
+            {/* Status */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</label>
+              <div className="relative">
+                <select
+                  value={statusFilter || 'ALL'}
+                  onChange={(e) => {
+                    if (e.target.value === 'ALL') setStatusFilter(null);
+                    else setStatusFilter(e.target.value);
+                  }}
+                  className="w-full appearance-none bg-gray-50 border border-gray-200 rounded-lg px-3 py-2.5 pr-8 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                >
+                  <option value="ALL">All Statuses</option>
+                  <option value="PENDING">Pending</option>
+                  <option value="PARENT_APPROVED">Parent Approved</option>
+                  <option value="PARENT_REJECTED">Parent Rejected</option>
+                  <option value="WARDEN_APPROVED">Warden Approved</option>
+                  <option value="WARDEN_REJECTED">Warden Rejected</option>
+                  <option value="APPROVED">Approved</option>
+                  <option value="REJECTED">Rejected</option>
+                </select>
+                <svg className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            </div>
+
+            {/* Date */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Date</label>
+              <div className="relative">
+                <input
+                  type="date"
+                  value={dateFilter}
+                  onClick={(e) => e.target.showPicker && e.target.showPicker()}
+                  onChange={(e) => setDateFilter(e.target.value)}
+                  className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2.5 pr-8 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition cursor-pointer [color-scheme:light] [&::-webkit-calendar-picker-indicator]:hidden"
+                />
+                <svg className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                  <line x1="16" y1="2" x2="16" y2="6"></line>
+                  <line x1="8" y1="2" x2="8" y2="6"></line>
+                  <line x1="3" y1="10" x2="21" y2="10"></line>
+                </svg>
+              </div>
+            </div>
+
+            {/* Clear */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-semibold text-transparent uppercase tracking-wider select-none">Action</label>
+              <button
+                onClick={clearFilters}
+                className="flex items-center justify-center gap-2 w-full bg-red-50 text-red-500 border border-red-200 hover:border-red-500 text-sm font-semibold rounded-lg px-4 py-2.5 transition-all duration-200"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                Clear Filters
+              </button>
+            </div>
           </div>
         </div>
 
@@ -552,73 +675,104 @@ export default function LeaveManagementTable() {
 
       {/* View Details Modal */}
       {showViewModal && viewLeave && (
-        <div className="fixed inset-0 bg-black/30 backdrop-blur-md flex items-center justify-center z-50 p-4 transition-all duration-300 ease-in-out">
-          <div className="bg-white rounded-lg max-w-lg w-full p-6 shadow-2xl">
-            <div className="flex items-center justify-between mb-5">
-              <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                Leave Details
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-all duration-300 ease-in-out">
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto overflow-hidden flex flex-col">
+            {/* Header */}
+            <div className="bg-[#4F8CCF] text-white px-6 py-4 flex justify-between items-center shrink-0">
+              <h3 className="text-xl font-semibold flex items-center gap-2">
+                Leave Request Details
               </h3>
-              <button
+              <button 
                 onClick={closeViewModal}
-                className="p-1 rounded-full hover:bg-gray-100 transition-colors"
+                className="text-white/80 hover:text-white transition-colors bg-black/10 hover:bg-black/20 p-1.5 rounded-full"
               >
-                <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
-
-            <div className="space-y-4">
-              {/* Leave Type */}
-              <div className="flex items-center justify-between py-3 border-b border-gray-100">
-                <span className="text-sm font-medium text-gray-500">Leave Type</span>
-                <span className="text-sm font-bold text-gray-800">{viewLeave.type}</span>
-              </div>
-
-              {/* From Date */}
-              <div className="flex items-center justify-between py-3 border-b border-gray-100">
-                <span className="text-sm font-medium text-gray-500">From Date</span>
-                <span className="text-sm font-bold text-gray-800">{viewLeave.from}</span>
-              </div>
-
-              {/* To Date */}
-              <div className="flex items-center justify-between py-3 border-b border-gray-100">
-                <span className="text-sm font-medium text-gray-500">To Date</span>
-                <span className="text-sm font-bold text-gray-800">{viewLeave.to}</span>
-              </div>
-
-              {/* Duration */}
-              <div className="flex items-center justify-between py-3 border-b border-gray-100">
-                <span className="text-sm font-medium text-gray-500">Duration</span>
-                <span className="text-sm font-bold text-gray-800">{viewLeave.duration} day(s)</span>
-              </div>
-
-              {/* Status */}
-              <div className="flex items-center justify-between py-3 border-b border-gray-100">
-                <span className="text-sm font-medium text-gray-500">Status</span>
-                <span className={`inline-block px-3 py-1 text-xs font-semibold rounded-sm ${statusColors[viewLeave.status]}`}>
-                  {viewLeave.status}
-                </span>
-              </div>
-
-              {/* Reason */}
-              <div className="py-3">
-                <span className="text-sm font-medium text-gray-500 block mb-2">Reason</span>
-                <div className="bg-gray-50 p-3 rounded-lg border border-gray-100 overflow-hidden">
-                  <p className="text-sm font-medium text-gray-700 leading-relaxed break-all" style={{ overflowWrap: 'break-word', wordBreak: 'break-all' }}>
-                    {viewLeave.reason}
+            
+            {/* Content */}
+            <div className="p-6 md:p-8 overflow-y-auto">
+              {/* Grid Details */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-1">
+                    Leave Type
+                  </label>
+                  <p className="text-base font-medium text-gray-800 bg-gray-50/50 px-3 py-2 rounded border border-gray-100">
+                    {viewLeave.type}
                   </p>
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-1">
+                    Current Status
+                  </label>
+                  <div className="mt-1">
+                    <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-sm font-semibold capitalize ${
+                        viewLeave.status.toLowerCase() === 'approved'
+                          ? 'bg-green-500 text-white'
+                          : viewLeave.status.toLowerCase() === 'rejected'
+                          ? 'bg-red-500 text-white'
+                          : viewLeave.status.toLowerCase() === 'parent_approved'
+                          ? 'bg-purple-500 text-white'
+                          : viewLeave.status.toLowerCase() === 'parent_rejected'
+                          ? 'bg-pink-500 text-white'
+                          : (viewLeave.status.toLowerCase() === 'warden_approved' || viewLeave.status.toLowerCase() === 'warden_rejected')
+                          ? 'bg-indigo-500 text-white'
+                          : 'bg-[#4F8DCF] text-white'
+                    }`}>
+                      {viewLeave.status.replace('_', ' ').toLowerCase()}
+                    </span>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-1">
+                    Start Date
+                  </label>
+                  <p className="text-base font-medium text-gray-800 bg-gray-50/50 px-3 py-2 rounded border border-gray-100 flex items-center gap-2">
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                    {viewLeave.from}
+                  </p>
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-1">
+                    End Date
+                  </label>
+                  <p className="text-base font-medium text-gray-800 bg-gray-50/50 px-3 py-2 rounded border border-gray-100 flex items-center gap-2">
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                    {viewLeave.to}
+                  </p>
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-1">
+                    Duration
+                  </label>
+                  <p className="text-base font-medium text-gray-800 bg-gray-50/50 px-3 py-2 rounded border border-gray-100">
+                    {viewLeave.duration} day(s)
+                  </p>
+                </div>
+                
+                <div className="md:col-span-2">
+                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-1">
+                    Reason for Leave
+                  </label>
+                  <div className="bg-gray-50/80 p-4 rounded-lg border border-gray-100 text-gray-700 min-h-[80px] whitespace-pre-wrap">
+                    {viewLeave.reason || <span className="text-gray-400 italic">No reason provided.</span>}
+                  </div>
                 </div>
               </div>
             </div>
-
-            <div className="mt-5 flex justify-end">
-              <button
-                onClick={closeViewModal}
-                className="px-5 py-2 bg-gray-100 text-gray-700 font-medium rounded-md hover:bg-gray-200 transition-colors"
+            
+            {/* Footer */}
+            <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end shrink-0">
+              <button 
+                onClick={closeViewModal} 
+                className="bg-white hover:bg-gray-100 text-gray-700 border border-gray-300 px-5 py-2 rounded-lg font-semibold transition-colors"
               >
                 Close
               </button>

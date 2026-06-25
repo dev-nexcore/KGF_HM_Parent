@@ -982,420 +982,323 @@ export default function ParentLogin() {
     return true;
   };
 
-  // const handleSendOtp = async () => {
-  //   // Dismiss any existing toasts first
-  //   toast.dismiss();
+  const handleSendOtp = async () => {
+    // Dismiss any existing toasts first
+    toast.dismiss();
     
-  //   // Validate student ID before sending OTP
-  //   if (!validateStudentId(studentId)) {
-  //     return;
-  //   }
-
-  //   setIsOtpSending(true);
-    
-  //   // Show sending toast
-  //   toast.loading("Sending OTP to your registered email and mobile number...", {
-  //     id: 'sending-otp',
-      
-  //   });
-    
-  //   try {
-  //     // Check if API URL is configured
-  //     if (!process.env.NEXT_PUBLIC_PROD_API_URL) {
-  //       toast.dismiss('sending-otp');
-  //       toast.error("API configuration error. Please contact support.", {
-  //         duration: 6000,
-  //       });
-  //       setIsOtpSending(false);
-  //       return;
-  //     }
-
-  //     const response = await axios.post(`${process.env.NEXT_PUBLIC_PROD_API_URL}/api/parentauth/send-login-otp`, {
-  //       studentId: studentId.trim(),
-  //     }, {
-  //       timeout: 10000, // 10 second timeout
-  //     });
-
-  //     // Validate response structure
-  //     if (!response.data || !response.data.email) {
-  //       toast.dismiss('sending-otp');
-  //       toast.error("Invalid response from server. Please try again.", {
-  //         duration: 5000,
-  //       });
-  //       setIsOtpSending(false);
-  //       return;
-  //     }
-
-  //     toast.dismiss('sending-otp');
-  //     setMaskedEmail(response.data.email);
-  //     setIsOtpSent(true);
-  //     toast.success("OTP sent successfully", {
-  //       duration: 4000,
-  //     });
-      
-  //   } catch (error) {
-  //     console.error("Send OTP Error:", error);
-  //     toast.dismiss('sending-otp');
-      
-  //     // Handle different types of errors with single toast
-  //     if (axios.isCancel(error)) {
-  //       toast.error("Request was cancelled");
-  //     } else if (error.code === 'ECONNABORTED') {
-  //       toast.error("Request timeout. Please check your internet connection and try again.", { 
-  //         duration: 6000 
-  //       });
-  //     } else if (error.code === 'ERR_NETWORK') {
-  //       toast.error("Network error. Please check your internet connection.", { 
-  //         duration: 6000 
-  //       });
-  //     } else if (error.response) {
-  //       // Server responded with error status
-  //       const status = error.response.status;
-  //       const message = error.response.data?.message || error.response.data?.error;
-        
-  //       switch (status) {
-  //         case 400:
-  //           toast.error(message || "Invalid Student ID format. Please check and try again.", {
-  //             duration: 5000,
-  //           });
-  //           break;
-  //         case 404:
-  //           toast.error(message || "Student ID not found in our records. Please verify the Student ID.", {
-  //             duration: 6000,
-  //           });
-  //           break;
-  //         case 422:
-  //           toast.error(message || "Invalid Student ID format. Please check and try again.", {
-  //             duration: 5000,
-  //           });
-  //           break;
-  //         case 429:
-  //           toast.error("Too many requests. Please wait a moment before trying again.", {
-  //             duration: 8000,
-  //           });
-  //           break;
-  //         case 500:
-  //           toast.error("Server error. Please try again later or contact support.", {
-  //             duration: 6000,
-  //           });
-  //           break;
-  //         case 503:
-  //           toast.error("Service temporarily unavailable. Please try again later.", {
-  //             duration: 6000,
-  //           });
-  //           break;
-  //         default:
-  //           toast.error(message || `Server error (${status}). Please try again.`, {
-  //             duration: 5000,
-  //           });
-  //       }
-  //     } else if (error.request) {
-  //       // Request was made but no response received
-  //       toast.error("No response from server. Please check your internet connection.", {
-  //         duration: 6000,
-  //       });
-  //     } else {
-  //       // Something else happened
-  //       toast.error("An unexpected error occurred. Please try again.", {
-  //         duration: 5000,
-  //       });
-  //     }
-  //   } finally {
-  //     setIsOtpSending(false);
-  //   }
-  // };
-
-  // const handleLogin = async () => {
-  //   // Dismiss any existing toasts first
-  //   toast.dismiss();
-    
-  //   // Validate both fields
-  //   if (!validateStudentId(studentId)) {
-  //     return;
-  //   }
-    
-  //   if (!validateOtp(otp)) {
-  //     return;
-  //   }
-
-  //   setIsLoading(true);
-    
-  //   toast.loading("Verifying OTP...", {
-  //     id: 'verifying-otp',
-  //   });
-    
-  //   try {
-  //     // Check if API URL is configured
-  //     if (!process.env.NEXT_PUBLIC_PROD_API_URL) {
-  //       toast.dismiss('verifying-otp');
-  //       toast.error("API configuration error. Please contact support.", {
-  //         duration: 6000,
-  //       });
-  //       setIsLoading(false);
-  //       return;
-  //     }
-
-  //     const response = await axios.post(`${process.env.NEXT_PUBLIC_PROD_API_URL}/api/parentauth/login`, {
-  //       studentId: studentId.trim(),
-  //       otp: otp.trim(),
-  //     }, {
-  //       timeout: 10000, // 10 second timeout
-  //     });
-
-  //     // Validate response structure
-  //     if (!response.data || !response.data.token || !response.data.parent) {
-  //       toast.dismiss('verifying-otp');
-  //       toast.error("Invalid login response. Please try again.", {
-  //         duration: 5000,
-  //       });
-  //       setIsLoading(false);
-  //       return;
-  //     }
-
-  //     const { token, parent } = response.data;
-
-  //     // Validate token and parent data
-  //     if (!token || typeof token !== 'string') {
-  //       toast.dismiss('verifying-otp');
-  //       toast.error("Invalid authentication token received.", {
-  //         duration: 5000,
-  //       });
-  //       setIsLoading(false);
-  //       return;
-  //     }
-
-  //     if (!parent || typeof parent !== 'object') {
-  //       toast.dismiss('verifying-otp');
-  //       toast.error("Invalid parent information received.", {
-  //         duration: 5000,
-  //       });
-  //       setIsLoading(false);
-  //       return;
-  //     }
-
-  //     // Store in localStorage with error handling
-  //     try {
-  //       localStorage.setItem("parentToken", token);
-  //       localStorage.setItem("parentInfo", JSON.stringify(parent));
-  //     } catch (storageError) {
-  //       console.error("Storage Error:", storageError);
-  //       toast.dismiss('verifying-otp');
-  //       toast.error("Failed to save login information. Please ensure cookies are enabled.", {
-  //         duration: 6000,
-  //       });
-  //       setIsLoading(false);
-  //       return;
-  //     }
-
-  //     refreshProfile();
-
-  //     toast.dismiss('verifying-otp');
-  //     toast.success("Login successful! Redirecting...", {
-  //       duration: 2000,
-  //     });
-
-  //     // Navigate with error handling
-  //     setTimeout(() => {
-  //       try {
-  //         router.push("/dashboard");
-  //       } catch (navigationError) {
-  //         console.error("Navigation Error:", navigationError);
-  //         toast.error("Login successful but failed to redirect. Please refresh the page.", {
-  //           duration: 6000,
-  //         });
-  //       }
-  //     }, 1000);
-      
-  //   } catch (error) {
-  //     console.error("Login Error:", error);
-  //     toast.dismiss('verifying-otp');
-      
-  //     // Handle different types of errors
-  //     if (axios.isCancel(error)) {
-  //       toast.error("Request was cancelled");
-  //     } else if (error.code === 'ECONNABORTED') {
-  //       toast.error("Request timeout. Please check your internet connection and try again.", {
-  //         duration: 6000,
-  //       });
-  //     } else if (error.code === 'ERR_NETWORK') {
-  //       toast.error("Network error. Please check your internet connection.", {
-  //         duration: 6000,
-  //       });
-  //     } else if (error.response) {
-  //       // Server responded with error status
-  //       const status = error.response.status;
-  //       const message = error.response.data?.message || error.response.data?.error;
-        
-  //       switch (status) {
-  //         case 400:
-  //           toast.error(message || "Invalid Student ID or OTP format. Please check your input.", {
-  //             duration: 5000,
-  //           });
-  //           break;
-  //         case 401:
-  //           toast.error(message || "Invalid or expired OTP. Please request a new OTP.", {
-  //             duration: 6000,
-  //           });
-  //           // Reset to OTP input state
-  //           setOtp("");
-  //           break;
-  //         case 404:
-  //           toast.error(message || "Student ID not found. Please check and try again.", {
-  //             duration: 6000,
-  //           });
-  //           break;
-  //         case 422:
-  //           toast.error(message || "Invalid OTP. Please check the 6-digit code and try again.", {
-  //             duration: 5000,
-  //           });
-  //           setOtp("");
-  //           break;
-  //         case 429:
-  //           toast.error("Too many login attempts. Please wait before trying again.", {
-  //             duration: 8000,
-  //           });
-  //           break;
-  //         case 500:
-  //           toast.error("Server error. Please try again later or contact support.", {
-  //             duration: 6000,
-  //           });
-  //           break;
-  //         case 503:
-  //           toast.error("Service temporarily unavailable. Please try again later.", {
-  //             duration: 6000,
-  //           });
-  //           break;
-  //         default:
-  //           toast.error(message || `Server error (${status}). Please try again.`, {
-  //             duration: 5000,
-  //           });
-  //       }
-  //     } else if (error.request) {
-  //       // Request was made but no response received
-  //       toast.error("No response from server. Please check your internet connection.", {
-  //         duration: 6000,
-  //       });
-  //     } else {
-  //       // Something else happened
-  //       toast.error("An unexpected error occurred during login. Please try again.", {
-  //         duration: 5000,
-  //       });
-  //     }
-  //   } finally {
-  //     setIsLoading(false);
-  //   }
-  // };
-
-  // const handleResendOtp = async () => {
-  //   if (!validateStudentId(studentId)) {
-  //     return;
-  //   }
-    
-  //   setOtp("");
-  //   toast.loading("Resending OTP...", { duration: 1000 });
-    
-  //   // Add a small delay to prevent spam
-  //   setTimeout(() => {
-  //     handleSendOtp();
-  //   }, 1000);
-  // };
-
-// 🔥 ONLY THIS FUNCTION CHANGE KARO (बाकी CODE SAME RAHEGA)
-
-const handleSendOtp = async () => {
-  toast.dismiss();
-
-  // Validate student ID
-  if (!validateStudentId(studentId)) return;
-
-  setIsOtpSending(true);
-
-  toast.loading("Please wait...", {
-    id: "sending-otp",
-  });
-
-  try {
-    // ❌ API CALL REMOVE
-    // Direct next step
-    setIsOtpSent(true);
-
-    toast.dismiss("sending-otp");
-    toast.success("Continue to login");
-  } catch (error) {
-    toast.dismiss("sending-otp");
-    toast.error("Something went wrong");
-  } finally {
-    setIsOtpSending(false);
-  }
-};
-
-
-// 🔥 LOGIN FUNCTION (OTP REMOVE)
-const handleLogin = async () => {
-  toast.dismiss();
-
-  if (!validateStudentId(studentId)) return;
-
-  setIsLoading(true);
-
-  toast.loading("Logging in...", {
-    id: "verifying-otp",
-  });
-
-  try {
-    if (!process.env.NEXT_PUBLIC_PROD_API_URL) {
-      toast.dismiss("verifying-otp");
-      toast.error("API configuration error");
-      setIsLoading(false);
+    // Validate student ID before sending OTP
+    if (!validateStudentId(studentId)) {
       return;
     }
 
-    const response = await axios.post(
-      `${process.env.NEXT_PUBLIC_PROD_API_URL}/api/parentauth/login`,
-      {
-        studentId: studentId.trim(), // 🔥 ONLY THIS
-      },
-      {
-        timeout: 10000,
+    setIsOtpSending(true);
+    
+    // Show sending toast
+    toast.loading("Sending OTP to your registered email and mobile number...", {
+      id: 'sending-otp',
+      
+    });
+    
+    try {
+      // Check if API URL is configured
+      if (!process.env.NEXT_PUBLIC_PROD_API_URL) {
+        toast.dismiss('sending-otp');
+        toast.error("API configuration error. Please contact support.", {
+          duration: 6000,
+        });
+        setIsOtpSending(false);
+        return;
       }
-    );
 
-    if (!response.data || !response.data.token || !response.data.parent) {
-      toast.dismiss("verifying-otp");
-      toast.error("Invalid login response");
-      setIsLoading(false);
+      const response = await axios.post(`${process.env.NEXT_PUBLIC_PROD_API_URL}/api/parentauth/send-login-otp`, {
+        studentId: studentId.trim(),
+      }, {
+        timeout: 10000, // 10 second timeout
+      });
+
+      // Validate response structure
+      if (!response.data || !response.data.email) {
+        toast.dismiss('sending-otp');
+        toast.error("Invalid response from server. Please try again.", {
+          duration: 5000,
+        });
+        setIsOtpSending(false);
+        return;
+      }
+
+      toast.dismiss('sending-otp');
+      setMaskedEmail(response.data.email);
+      setIsOtpSent(true);
+      toast.success("OTP sent successfully", {
+        duration: 4000,
+      });
+      
+    } catch (error) {
+      console.error("Send OTP Error:", error);
+      toast.dismiss('sending-otp');
+      
+      // Handle different types of errors with single toast
+      if (axios.isCancel(error)) {
+        toast.error("Request was cancelled");
+      } else if (error.code === 'ECONNABORTED') {
+        toast.error("Request timeout. Please check your internet connection and try again.", { 
+          duration: 6000 
+        });
+      } else if (error.code === 'ERR_NETWORK') {
+        toast.error("Network error. Please check your internet connection.", { 
+          duration: 6000 
+        });
+      } else if (error.response) {
+        // Server responded with error status
+        const status = error.response.status;
+        const message = error.response.data?.message || error.response.data?.error;
+        
+        switch (status) {
+          case 400:
+            toast.error(message || "Invalid Student ID format. Please check and try again.", {
+              duration: 5000,
+            });
+            break;
+          case 404:
+            toast.error(message || "Student ID not found in our records. Please verify the Student ID.", {
+              duration: 6000,
+            });
+            break;
+          case 422:
+            toast.error(message || "Invalid Student ID format. Please check and try again.", {
+              duration: 5000,
+            });
+            break;
+          case 429:
+            toast.error("Too many requests. Please wait a moment before trying again.", {
+              duration: 8000,
+            });
+            break;
+          case 500:
+            toast.error("Server error. Please try again later or contact support.", {
+              duration: 6000,
+            });
+            break;
+          case 503:
+            toast.error("Service temporarily unavailable. Please try again later.", {
+              duration: 6000,
+            });
+            break;
+          default:
+            toast.error(message || `Server error (${status}). Please try again.`, {
+              duration: 5000,
+            });
+        }
+      } else if (error.request) {
+        // Request was made but no response received
+        toast.error("No response from server. Please check your internet connection.", {
+          duration: 6000,
+        });
+      } else {
+        // Something else happened
+        toast.error("An unexpected error occurred. Please try again.", {
+          duration: 5000,
+        });
+      }
+    } finally {
+      setIsOtpSending(false);
+    }
+  };
+
+  const handleLogin = async () => {
+    // Dismiss any existing toasts first
+    toast.dismiss();
+    
+    // Validate both fields
+    if (!validateStudentId(studentId)) {
+      return;
+    }
+    
+    if (!validateOtp(otp)) {
       return;
     }
 
-    const { token, parent } = response.data;
+    setIsLoading(true);
+    
+    toast.loading("Verifying OTP...", {
+      id: 'verifying-otp',
+    });
+    
+    try {
+      // Check if API URL is configured
+      if (!process.env.NEXT_PUBLIC_PROD_API_URL) {
+        toast.dismiss('verifying-otp');
+        toast.error("API configuration error. Please contact support.", {
+          duration: 6000,
+        });
+        setIsLoading(false);
+        return;
+      }
 
-    localStorage.setItem("parentToken", token);
-    localStorage.setItem("parentInfo", JSON.stringify(parent));
+      const response = await axios.post(`${process.env.NEXT_PUBLIC_PROD_API_URL}/api/parentauth/login`, {
+        studentId: studentId.trim(),
+        otp: otp.trim(),
+      }, {
+        timeout: 10000, // 10 second timeout
+      });
 
-    refreshProfile();
+      // Validate response structure
+      if (!response.data || !response.data.token || !response.data.parent) {
+        toast.dismiss('verifying-otp');
+        toast.error("Invalid login response. Please try again.", {
+          duration: 5000,
+        });
+        setIsLoading(false);
+        return;
+      }
 
-    toast.dismiss("verifying-otp");
-    toast.success("Login successful!");
+      const { token, parent } = response.data;
 
+      // Validate token and parent data
+      if (!token || typeof token !== 'string') {
+        toast.dismiss('verifying-otp');
+        toast.error("Invalid authentication token received.", {
+          duration: 5000,
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      if (!parent || typeof parent !== 'object') {
+        toast.dismiss('verifying-otp');
+        toast.error("Invalid parent information received.", {
+          duration: 5000,
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      // Store in localStorage with error handling
+      try {
+        localStorage.setItem("parentToken", token);
+        localStorage.setItem("parentInfo", JSON.stringify(parent));
+      } catch (storageError) {
+        console.error("Storage Error:", storageError);
+        toast.dismiss('verifying-otp');
+        toast.error("Failed to save login information. Please ensure cookies are enabled.", {
+          duration: 6000,
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      refreshProfile();
+
+      toast.dismiss('verifying-otp');
+      toast.success("Login successful! Redirecting...", {
+        duration: 2000,
+      });
+
+      // Navigate with error handling
+      setTimeout(() => {
+        try {
+          router.push("/dashboard");
+        } catch (navigationError) {
+          console.error("Navigation Error:", navigationError);
+          toast.error("Login successful but failed to redirect. Please refresh the page.", {
+            duration: 6000,
+          });
+        }
+      }, 1000);
+      
+    } catch (error) {
+      console.error("Login Error:", error);
+      toast.dismiss('verifying-otp');
+      
+      // Handle different types of errors
+      if (axios.isCancel(error)) {
+        toast.error("Request was cancelled");
+      } else if (error.code === 'ECONNABORTED') {
+        toast.error("Request timeout. Please check your internet connection and try again.", {
+          duration: 6000,
+        });
+      } else if (error.code === 'ERR_NETWORK') {
+        toast.error("Network error. Please check your internet connection.", {
+          duration: 6000,
+        });
+      } else if (error.response) {
+        // Server responded with error status
+        const status = error.response.status;
+        const message = error.response.data?.message || error.response.data?.error;
+        
+        switch (status) {
+          case 400:
+            toast.error(message || "Invalid Student ID or OTP format. Please check your input.", {
+              duration: 5000,
+            });
+            break;
+          case 401:
+            toast.error(message || "Invalid or expired OTP. Please request a new OTP.", {
+              duration: 6000,
+            });
+            // Reset to OTP input state
+            setOtp("");
+            break;
+          case 404:
+            toast.error(message || "Student ID not found. Please check and try again.", {
+              duration: 6000,
+            });
+            break;
+          case 422:
+            toast.error(message || "Invalid OTP. Please check the 6-digit code and try again.", {
+              duration: 5000,
+            });
+            setOtp("");
+            break;
+          case 429:
+            toast.error("Too many login attempts. Please wait before trying again.", {
+              duration: 8000,
+            });
+            break;
+          case 500:
+            toast.error("Server error. Please try again later or contact support.", {
+              duration: 6000,
+            });
+            break;
+          case 503:
+            toast.error("Service temporarily unavailable. Please try again later.", {
+              duration: 6000,
+            });
+            break;
+          default:
+            toast.error(message || `Server error (${status}). Please try again.`, {
+              duration: 5000,
+            });
+        }
+      } else if (error.request) {
+        // Request was made but no response received
+        toast.error("No response from server. Please check your internet connection.", {
+          duration: 6000,
+        });
+      } else {
+        // Something else happened
+        toast.error("An unexpected error occurred during login. Please try again.", {
+          duration: 5000,
+        });
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    if (!validateStudentId(studentId)) {
+      return;
+    }
+    
+    setOtp("");
+    toast.loading("Resending OTP...", { duration: 1000 });
+    
+    // Add a small delay to prevent spam
     setTimeout(() => {
-      router.push("/dashboard");
+      handleSendOtp();
     }, 1000);
-
-  } catch (error) {
-    toast.dismiss("verifying-otp");
-
-    const msg = error?.response?.data?.message || "Login failed";
-    toast.error(msg);
-  } finally {
-    setIsLoading(false);
-  }
-};
-
-
-// 🔥 RESEND OTP (OPTIONAL)
-const handleResendOtp = async () => {
-  toast.success("OTP not required");
-};
+  };
 
 
   const handleBackToStudentId = () => {
@@ -1612,18 +1515,26 @@ const handleResendOtp = async () => {
               </div>
             ) : (
               // Step 2: OTP Input
-              <div className={`space-y-4 ${isOtpSent ? 'animate-fadeInUp' : ''}`}>
-                
+              <div className={`space-y-6 w-full ${isOtpSent ? 'animate-fadeInUp' : ''}`}>
+                <div className="text-center mb-4">
+                  <p className="text-sm text-gray-600">
+                    OTP sent to Registered Email: <br/><span className="font-semibold">{maskedEmail}</span>
+                  </p>
+                </div>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-black block">
-                    Enter OTP
-                  </label>
+                <div>
+                  <label className="block text-lg font-bold mb-2 text-black text-left">Enter OTP</label>
                   <input
                     type="text"
                     placeholder="Enter 6-digit OTP"
                     maxLength="6"
-                    className="w-full px-3 py-2.5 text-sm rounded-lg border border-gray-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#A4B494] focus:border-transparent text-center text-lg tracking-widest transition-all duration-300 ease-in-out transform focus:scale-[1.02] hover:shadow-lg"
+                    required
+                    className="w-full px-5 py-3 text-gray-800 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#9AAA87] placeholder:font-medium text-center text-xl tracking-widest transition-all duration-300 ease-in-out transform focus:scale-[1.02] hover:shadow-lg"
+                    style={{
+                      boxShadow: "0px 4px 10px 0px #00000040",
+                      fontFamily: "Poppins, sans-serif",
+                      fontWeight: "500",
+                    }}
                     value={otp}
                     onChange={handleOtpChange}
                     onKeyDown={handleKeyPress}
@@ -1771,20 +1682,28 @@ const handleResendOtp = async () => {
               </div>
             ) : (
               // Step 2: OTP Input with slide-in animation
-              <div className={`w-full space-y-4 transition-all duration-500 ease-in-out ${
+              <div className={`w-full space-y-6 transition-all duration-500 ease-in-out ${
                 isOtpSent ? 'animate-fadeInUp' : ''
               }`}>
-                
+                <div className="text-center mb-4">
+                  <p className="text-sm text-gray-600">
+                    OTP sent to Registered Email: <br/><span className="font-semibold">{maskedEmail}</span>
+                  </p>
+                </div>
 
-                <div className="space-y-2">
-                  <label className="text-xl font-semibold text-black w-full text-left block">
-                    Enter OTP
-                  </label>
+                <div>
+                  <label className="block text-lg font-bold mb-2 text-black w-full text-left">Enter OTP</label>
                   <input
                     type="text"
                     placeholder="Enter 6-digit OTP"
                     maxLength="6"
-                    className="w-full px-4 py-3 rounded-[1rem] border border-gray-300 shadow-md focus:outline-none focus:ring-2 focus:ring-[#A4B494] focus:border-transparent text-center text-lg tracking-widest transition-all duration-300 ease-in-out transform focus:scale-[1.02] hover:shadow-lg"
+                    required
+                    className="w-full px-5 py-3 text-gray-800 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#9AAA87] placeholder:font-medium text-center text-xl tracking-widest transition-all duration-300 ease-in-out transform focus:scale-[1.02] hover:shadow-lg"
+                    style={{
+                      boxShadow: "0px 4px 10px 0px #00000040",
+                      fontFamily: "Poppins, sans-serif",
+                      fontWeight: "500",
+                    }}
                     value={otp}
                     onChange={handleOtpChange}
                     onKeyDown={handleKeyPress}
