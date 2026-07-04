@@ -16,7 +16,7 @@ export default function Navbar({ children, subtitle = "-have a great day" }) {
 
   return (
     <section className="flex-1 bg-white flex flex-col">
-      <header className="flex items-center justify-between px-3 sm:px-5 md:px-6 py-2 sm:py-3 md:py-4 bg-[#BEC5AD]">
+      <header className="relative z-[99] flex items-center justify-between px-3 sm:px-5 md:px-6 py-2 sm:py-3 md:py-4 bg-[#BEC5AD]">
         {/* Add space for hamburger menu on mobile */}
         <div className="w-11 md:w-0 flex-shrink-0"></div>
         <div className="flex-1 min-w-0 text-center md:text-left">
@@ -45,7 +45,7 @@ export default function Navbar({ children, subtitle = "-have a great day" }) {
           )}
         </button>
       </header>
-      <main className="flex-1 p-1 sm:p-3 md:p-2 pt-1 sm:pt-2">
+      <main className="flex-1 p-1 sm:p-3 md:p-2 pt-20 sm:pt-20">
         {children}
       </main>
     </section>
