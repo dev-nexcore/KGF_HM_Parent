@@ -170,8 +170,8 @@ export default function StudentDocuments() {
         </h3>
 
         {/* Responsive Table */}
-        <div className="border border-gray-100 rounded-xl overflow-hidden">
-          <table className="w-full text-left border-collapse">
+        <div className="border border-gray-100 rounded-xl overflow-x-auto">
+          <table className="w-full text-left border-collapse min-w-[500px]">
             <thead className="bg-gray-50 text-gray-500 uppercase text-[10px] font-bold tracking-widest border-b">
               <tr>
                 <th className="px-6 py-4">Document Type</th>

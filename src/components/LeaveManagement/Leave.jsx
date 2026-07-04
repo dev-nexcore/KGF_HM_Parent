@@ -319,7 +319,7 @@ export default function LeaveManagementTable() {
         </div>
 
         {/* Summary Statistics - Clickable */}
-        <div className="mb-3 grid grid-cols-4 gap-3 flex-shrink-0">
+        <div className="mb-3 grid grid-cols-2 lg:grid-cols-4 gap-3 flex-shrink-0">
           <div
             onClick={() => { setStatusFilter(null); setCurrentPage(1); }}
             className={`bg-blue-50 border rounded-lg px-4 py-3 flex items-center justify-between cursor-pointer transition-all hover:shadow-md ${
