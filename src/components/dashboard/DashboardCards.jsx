@@ -12,6 +12,7 @@ export default function DashboardCards() {
     roomNo: '',
     bedAllotment: '',
     profileImage: null,
+    imageError: false,
     loading: true,
     error: null
   });
@@ -52,9 +53,9 @@ export default function DashboardCards() {
 
       let profileImageUrl = null;
       if (studentProfile?.profileImage) {
-        profileImageUrl = studentProfile.profileImage;
+        profileImageUrl = `${process.env.NEXT_PUBLIC_PROD_API_URL}/${studentProfile.profileImage}`;
       } else if (studentProfile?.photo) {
-        profileImageUrl = studentProfile.photo;
+        profileImageUrl = `${process.env.NEXT_PUBLIC_PROD_API_URL}/${studentProfile.photo}`;
       }
 
       if (profileImageUrl) {
@@ -146,9 +147,9 @@ export default function DashboardCards() {
         // ✅ Prefer `profileImage` or `photo` from API
         let profileImageUrl = null;
         if (studentInfo.profileImage) {
-          profileImageUrl = studentInfo.profileImage;
+          profileImageUrl = `${process.env.NEXT_PUBLIC_PROD_API_URL}/${studentInfo.profileImage}`;
         } else if (studentInfo.photo) {
-          profileImageUrl = studentInfo.photo;
+          profileImageUrl = `${process.env.NEXT_PUBLIC_PROD_API_URL}/${studentInfo.photo}`;
         }
 
         setStudentData({
@@ -255,11 +256,12 @@ export default function DashboardCards() {
           {/* Student Card */}
           <div className="bg-[#B8C5A8] rounded-xl p-4 sm:p-6 shadow-lg flex flex-col justify-center items-center min-h-[280px]">
             <div className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 rounded-full bg-white mb-4 flex items-center justify-center overflow-hidden">
-              {studentData.profileImage ? (
+              {studentData.profileImage && !studentData.imageError ? (
                 <img
                   src={studentData.profileImage}
                   alt="Student Profile"
                   className="w-full h-full object-cover rounded-full"
+                  onError={() => setStudentData(prev => ({ ...prev, imageError: true }))}
                 />
               ) : (
                 <User className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 text-gray-600" />

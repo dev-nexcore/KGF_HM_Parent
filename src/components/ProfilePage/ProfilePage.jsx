@@ -9,8 +9,10 @@ import {
 } from "react-icons/fa";
 import axios from "axios";
 import { toast } from "react-hot-toast";
+import { useProfile } from "../ProfileContext";
 
 export default function ProfilePage() {
+  const { refreshProfile } = useProfile();
   const [profileData, setProfileData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -109,6 +111,7 @@ export default function ProfilePage() {
       const reader = new FileReader();
       reader.onload = (e) => {
         updateLocalStorageAndNotify('parentProfileImage', e.target.result);
+        refreshProfile();
       };
       reader.readAsDataURL(file);
 
@@ -175,6 +178,7 @@ export default function ProfilePage() {
       }));
 
       updateLocalStorageAndNotify('parentProfileImage', null);
+      refreshProfile();
       toast.success('Profile image removed successfully!');
 
     } catch (err) {

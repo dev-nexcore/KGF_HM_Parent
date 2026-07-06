@@ -465,7 +465,7 @@ export default function Sidebar() {
 
         {/* Logout Modal */}
         {showLogoutModal && (
-          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" style={{ backdropFilter: 'blur(8px)' }}>
+          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[1000] p-4" style={{ backdropFilter: 'blur(8px)' }}>
             <div
               className="max-w-md w-full p-6 rounded-2xl border shadow-2xl relative overflow-hidden"
               style={{
