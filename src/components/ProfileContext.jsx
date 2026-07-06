@@ -13,6 +13,12 @@ export const ProfileProvider = ({ children }) => {
 
   useEffect(() => {
     fetchProfileData();
+    
+    const handleProfileUpdate = () => {
+      fetchProfileData();
+    };
+    window.addEventListener('profileUpdated', handleProfileUpdate);
+    return () => window.removeEventListener('profileUpdated', handleProfileUpdate);
   }, []);
 
   const fetchProfileData = async () => {

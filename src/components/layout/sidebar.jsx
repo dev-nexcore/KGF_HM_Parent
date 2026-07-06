@@ -338,7 +338,7 @@ export default function Sidebar() {
         {/* Hamburger button */}
         <button
           aria-label="Open sidebar"
-          className="md:hidden fixed top-2 left-2 z-50 p-2 rounded-lg bg-[#9CAD8F] text-black shadow-lg hover:bg-[#8DA087] transition-colors"
+          className="md:hidden fixed top-2 left-2 z-[100] p-2 rounded-lg bg-[#9CAD8F] text-black shadow-lg hover:bg-[#8DA087] transition-colors"
           onClick={() => setSidebarOpen(true)}
         >
           <svg
@@ -361,7 +361,7 @@ export default function Sidebar() {
           className={`
             fixed top-0 left-0 h-full bg-[#A4B494] py-6 flex flex-col justify-between rounded-tr-3xl shadow-lg
             transform transition-transform duration-300 ease-in-out
-            z-40
+            z-[100]
             w-48 sm:w-60 md:w-60
             md:translate-x-0 md:rounded-tr-4xl md:shadow md:sticky md:top-0 md:h-screen md:overflow-hidden
             ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}

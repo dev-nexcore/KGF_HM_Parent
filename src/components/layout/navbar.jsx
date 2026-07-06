@@ -16,16 +16,17 @@ export default function Navbar({ children, subtitle = "-have a great day" }) {
 
   return (
     <section className="flex-1 bg-white flex flex-col">
-      <header className="relative z-[99] flex items-center justify-between px-3 sm:px-5 md:px-6 py-2 sm:py-3 md:py-4 bg-[#BEC5AD]">
-        {/* Add space for hamburger menu on mobile */}
-        <div className="w-11 md:w-0 flex-shrink-0"></div>
-        <div className="flex-1 min-w-0 text-center md:text-left">
-          <div className="font-semibold leading-tight text-sm sm:text-lg md:text-xl lg:text-2xl text-black">
-            Welcome Back, {parentFullName}
+      <header className="relative z-[99] flex items-center justify-between px-4 sm:px-6 md:px-8 py-3 md:py-4 bg-[#BEC5AD]">
+        <div className="flex items-center gap-3 sm:gap-4">
+          <div className="w-11 md:w-0 flex-shrink-0 md:hidden"></div>
+          <div className="flex flex-col min-w-0">
+            <div className="font-semibold leading-tight text-base sm:text-lg md:text-xl lg:text-2xl text-black">
+              Welcome Back, {parentFullName}
+            </div>
+            <p className="italic text-black text-xs sm:text-sm md:text-base mt-0.5">
+              {subtitle}
+            </p>
           </div>
-          <p className="italic text-black text-xs sm:text-sm md:text-base mt-0.5 sm:mt-1">
-            {subtitle}
-          </p>
         </div>
         
         {/* Profile Image/Icon - Clickable */}
