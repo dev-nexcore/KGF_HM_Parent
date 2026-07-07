@@ -346,7 +346,7 @@ export default function Sidebar() {
         {/* Sidebar */}
         <aside
           className={`
-            fixed top-0 left-0 h-full bg-[#A4B494] py-6 flex flex-col justify-between rounded-tr-3xl shadow-lg
+            fixed top-0 left-0 h-[100dvh] overflow-y-auto no-scrollbar bg-[#A4B494] py-6 flex flex-col md:justify-between rounded-tr-3xl shadow-lg
             transform transition-transform duration-300 ease-in-out
             z-[100]
             w-48 sm:w-60 md:w-60
@@ -385,7 +385,7 @@ export default function Sidebar() {
           </div>
 
           {/* Navigation Links */}
-          <div className="flex-1">
+          <div className="md:flex-1">
             {[
               { href: "/dashboard", icon: "/parent/dashboard.png", label: "Dashboard" },
               { href: "/Attendance", icon: "/parent/calender.png", label: "Attendance History" },
