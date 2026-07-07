@@ -300,6 +300,12 @@ export default function Sidebar() {
     setSidebarOpen(false);
   }, [pathname]);
 
+  useEffect(() => {
+    const handleToggle = () => setSidebarOpen(prev => !prev);
+    window.addEventListener("toggleSidebar", handleToggle);
+    return () => window.removeEventListener("toggleSidebar", handleToggle);
+  }, []);
+
   const normalize = (path) => path?.toLowerCase().replace(/\/$/, "") ?? "";
 
   const isActive = (href) => {
@@ -335,26 +341,7 @@ export default function Sidebar() {
   return (
     <div className="bg-[#BEC5AD]">
       <>
-        {/* Hamburger button */}
-        <button
-          aria-label="Open sidebar"
-          className="md:hidden fixed top-2 left-2 z-[100] p-2 rounded-lg bg-[#9CAD8F] text-black shadow-lg hover:bg-[#8DA087] transition-colors"
-          onClick={() => setSidebarOpen(true)}
-        >
-          <svg
-            className="w-4 h-4"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2.5}
-              d="M4 6h16M4 12h16M4 18h16"
-            />
-          </svg>
-        </button>
+        {/* Mobile Menu Button handled by Navbar */}
 
         {/* Sidebar */}
         <aside
