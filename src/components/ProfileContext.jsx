@@ -60,8 +60,16 @@ export const ProfileProvider = ({ children }) => {
     }
 
   } catch (error) {
-    console.error('Failed to fetch profile data:', error);
-    loadFromLocalStorage();
+    if (error.response && error.response.status === 401) {
+      console.warn('Session expired. Redirecting to login...');
+      localStorage.removeItem('parentToken');
+      localStorage.removeItem('parentInfo');
+      localStorage.removeItem('studentId');
+      window.location.href = '/';
+    } else {
+      console.error('Failed to fetch profile data:', error.message);
+      loadFromLocalStorage();
+    }
   } finally {
     setLoading(false);
   }

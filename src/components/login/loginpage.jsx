@@ -1013,7 +1013,7 @@ export default function ParentLogin() {
       const response = await axios.post(`${process.env.NEXT_PUBLIC_PROD_API_URL}/api/parentauth/send-login-otp`, {
         studentId: studentId.trim(),
       }, {
-        timeout: 10000, // 10 second timeout
+        timeout: 30000, // 30 second timeout
       });
 
       // Validate response structure
@@ -1139,7 +1139,7 @@ export default function ParentLogin() {
         studentId: studentId.trim(),
         otp: otp.trim(),
       }, {
-        timeout: 10000, // 10 second timeout
+        timeout: 30000, // 30 second timeout
       });
 
       // Validate response structure
