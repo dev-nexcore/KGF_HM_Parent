@@ -26,6 +26,7 @@ export default function DashboardCards() {
     today: 'Loading...',
     last7Days: 'Loading...',
     totalAbsences: 'Loading...',
+    totalLeaves: 'Loading...',
     lastAbsenceDate: 'Loading...'
   });
 
@@ -53,9 +54,13 @@ export default function DashboardCards() {
 
       let profileImageUrl = null;
       if (studentProfile?.profileImage) {
-        profileImageUrl = `${process.env.NEXT_PUBLIC_PROD_API_URL}/${studentProfile.profileImage}`;
+        profileImageUrl = studentProfile.profileImage.startsWith('http') 
+          ? studentProfile.profileImage 
+          : `${process.env.NEXT_PUBLIC_PROD_API_URL}/${studentProfile.profileImage}`;
       } else if (studentProfile?.photo) {
-        profileImageUrl = `${process.env.NEXT_PUBLIC_PROD_API_URL}/${studentProfile.photo}`;
+        profileImageUrl = studentProfile.photo.startsWith('http')
+          ? studentProfile.photo
+          : `${process.env.NEXT_PUBLIC_PROD_API_URL}/${studentProfile.photo}`;
       }
 
       if (profileImageUrl) {
@@ -71,24 +76,93 @@ export default function DashboardCards() {
 
   const fetchAttendanceData = async (studentId, parentToken) => {
     try {
-      const attendanceResponse = await axios.get(
-        `${process.env.NEXT_PUBLIC_PROD_API_URL}/api/parentauth/attendance?studentId=${studentId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${parentToken}`,
-            'Content-Type': 'application/json'
-          }
-        }
-      );
+      // Fetch logs, profile, and leaves concurrently
+      const [logsRes, profileRes, leavesRes] = await Promise.all([
+        axios.get(`${process.env.NEXT_PUBLIC_PROD_API_URL}/api/studentauth/attendance-log/${studentId}`, { headers: { Authorization: `Bearer ${parentToken}` } }).catch(() => ({ data: { attendanceLog: [] } })),
+        axios.get(`${process.env.NEXT_PUBLIC_PROD_API_URL}/api/parentauth/student-profile?studentId=${studentId}`, { headers: { Authorization: `Bearer ${parentToken}` } }),
+        axios.get(`${process.env.NEXT_PUBLIC_PROD_API_URL}/api/parentauth/leave-management`, { params: { studentId }, headers: { Authorization: `Bearer ${parentToken}` } }).catch(() => ({ data: { leaveHistory: [] } }))
+      ]);
 
-      const attendanceData = attendanceResponse.data;
-      const attendanceSummary = attendanceData.attendanceSummary || {};
+      const logs = logsRes.data?.attendanceLog || [];
+      const student = profileRes.data?.student || {};
+      const leaves = leavesRes.data?.leaveHistory || [];
+
+      let admissionDate = student.admissionDate || student.createdAt;
+      if (admissionDate) {
+        admissionDate = new Date(admissionDate);
+        admissionDate.setHours(0, 0, 0, 0);
+      } else {
+        // fallback
+        admissionDate = new Date();
+        admissionDate.setHours(0, 0, 0, 0);
+      }
+
+      const now = new Date();
+      now.setHours(0, 0, 0, 0);
+
+      let presentCount = 0;
+      let absentCount = 0;
+      let leaveCount = 0;
+      let totalValidDays = 0;
+      let lastAbsence = null;
+      let isPresentToday = false;
+
+      let earliestDate = admissionDate;
+      if (logs.length > 0) {
+        const oldestLogTime = Math.min(...logs.map(l => new Date(l.checkInDate).getTime()));
+        if (oldestLogTime < earliestDate.getTime()) {
+          earliestDate = new Date(oldestLogTime);
+          earliestDate.setHours(0, 0, 0, 0);
+        }
+      }
+
+      for (let d = new Date(earliestDate); d <= now; d.setDate(d.getDate() + 1)) {
+        const iterDate = new Date(d);
+        iterDate.setHours(0, 0, 0, 0);
+        const dateStr = iterDate.toDateString();
+
+        const marked = logs.some(log => new Date(log.checkInDate).toDateString() === dateStr);
+        const onLeave = leaves.some(leave => {
+          if (leave.status !== 'approved' && leave.status !== 'warden_approved') return false;
+          const start = new Date(leave.startDate); start.setHours(0,0,0,0);
+          const end = new Date(leave.endDate); end.setHours(23,59,59,999);
+          return iterDate >= start && iterDate <= end;
+        });
+
+        if (marked) {
+          presentCount++;
+          totalValidDays++;
+          if (dateStr === now.toDateString()) {
+            isPresentToday = true;
+          }
+        } else if (onLeave) {
+          leaveCount++;
+          totalValidDays++;
+        } else if (!onLeave && iterDate < now) {
+          absentCount++;
+          totalValidDays++;
+          lastAbsence = iterDate;
+        } else if (!onLeave && iterDate.getTime() === now.getTime()) {
+           totalValidDays++;
+        }
+      }
+
+      let lastAbsenceStr = "No recent absences";
+      if (lastAbsence) {
+        lastAbsenceStr = lastAbsence.toLocaleDateString('en-GB', {
+          weekday: 'short',
+          month: 'short',
+          day: '2-digit',
+          year: 'numeric'
+        });
+      }
 
       setAttendance({
-        today: attendanceSummary.isPresentToday ? "Present" : "Absent",
-        last7Days: `${attendanceSummary.presentDays || 0}/${attendanceSummary.totalDays || 0} Present`,
-        totalAbsences: `${attendanceSummary.absentDays || 0} Days`,
-        lastAbsenceDate: formatLastAbsence(attendanceSummary.lastAbsence)
+        today: isPresentToday ? "Present" : "Absent",
+        last7Days: `${presentCount}/${totalValidDays} Present`,
+        totalAbsences: `${absentCount} Days`,
+        totalLeaves: `${leaveCount} Days`,
+        lastAbsenceDate: lastAbsenceStr
       });
 
     } catch (error) {
@@ -97,6 +171,7 @@ export default function DashboardCards() {
         today: 'Error',
         last7Days: 'Error',
         totalAbsences: 'Error',
+        totalLeaves: 'Error',
         lastAbsenceDate: 'Error'
       });
     }
@@ -147,9 +222,13 @@ export default function DashboardCards() {
         // ✅ Prefer `profileImage` or `photo` from API
         let profileImageUrl = null;
         if (studentInfo.profileImage) {
-          profileImageUrl = `${process.env.NEXT_PUBLIC_PROD_API_URL}/${studentInfo.profileImage}`;
+          profileImageUrl = studentInfo.profileImage.startsWith('http') 
+            ? studentInfo.profileImage 
+            : `${process.env.NEXT_PUBLIC_PROD_API_URL}/${studentInfo.profileImage}`;
         } else if (studentInfo.photo) {
-          profileImageUrl = `${process.env.NEXT_PUBLIC_PROD_API_URL}/${studentInfo.photo}`;
+          profileImageUrl = studentInfo.photo.startsWith('http')
+            ? studentInfo.photo
+            : `${process.env.NEXT_PUBLIC_PROD_API_URL}/${studentInfo.photo}`;
         }
 
         setStudentData({
@@ -170,13 +249,40 @@ export default function DashboardCards() {
 
         await fetchAttendanceData(studentId, parentToken);
 
-        const feesOverview = dashboardData.feesOverview || {};
+        const feesResponse = await axios.get(
+          `${process.env.NEXT_PUBLIC_PROD_API_URL}/api/parentauth/fees?studentId=${studentId}`,
+          {
+            headers: { Authorization: `Bearer ${parentToken}` }
+          }
+        );
+
+        const allInvoices = feesResponse.data.feesOverview?.allInvoices || [];
+        
+        let amountDue = 0;
+        let totalAmount = 0;
+        let lastPaidDate = null;
+
+        allInvoices.forEach(inv => {
+          totalAmount += (inv.amount || 0);
+          const s = inv.status ? inv.status.toLowerCase() : '';
+          if (s === 'pending' || s === 'overdue' || s === 'unpaid') {
+            amountDue += (inv.amount || 0);
+          } else if (s === 'paid') {
+            const dateStr = inv.paidDate || inv.paymentDate || inv.createdAt;
+            if (dateStr) {
+              if (!lastPaidDate || new Date(dateStr) > new Date(lastPaidDate)) {
+                lastPaidDate = dateStr;
+              }
+            }
+          }
+        });
+
         setFeesData({
-          status: feesOverview.status || 'Not Available',
-          amountDue: feesOverview.amountDue || 0,
-          totalAmount: feesOverview.totalAmount || 0,
-          dueDate: feesOverview.dueDate || 'N/A',
-          paidDate: feesOverview.paidDate || 'N/A'
+          status: amountDue > 0 ? 'Pending' : (totalAmount > 0 ? 'Paid' : 'No Dues'),
+          amountDue: amountDue,
+          totalAmount: totalAmount,
+          dueDate: 'N/A',
+          paidDate: lastPaidDate || 'N/A'
         });
 
         const wardenInfo = dashboardData.wardenInfo || {};
@@ -245,41 +351,55 @@ export default function DashboardCards() {
   };
 
   return (
-    <div className="space-y-6 p-2 sm:p-4 lg:p-6">
-      <div className="flex items-center ml-2 mb-4 sm:mb-6">
-        <div className="w-1 h-6 sm:h-7 bg-[#4F8DCF] mr-2 sm:mr-3"></div>
-        <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold">Dashboard</h2>
-      </div>
-      <div className="w-full max-w-[1400px] mx-auto px-4">
+    <div className="bg-[#ffffff] px-6 sm:px-8 lg:px-2.5 py-2 min-h-screen font-sans w-full">
+      <div className="max-w-7xl mx-auto w-full">
+        {/* Page Title */}
+        <div className="flex items-center justify-between mb-6 mt-2">
+          <h2 className="text-lg sm:text-xl md:text-2xl font-semibold text-black border-l-4 border-[#4F8CCF] pl-2">
+            Dashboard
+          </h2>
+        </div>
+        
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 xl:gap-12">
 
           {/* Student Card */}
-          <div className="bg-[#B8C5A8] rounded-xl p-4 sm:p-6 shadow-lg flex flex-col justify-center items-center min-h-[280px]">
-            <div className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 rounded-full bg-white mb-4 flex items-center justify-center overflow-hidden">
-              {studentData.profileImage && !studentData.imageError ? (
-                <img
-                  src={studentData.profileImage}
-                  alt="Student Profile"
-                  className="w-full h-full object-cover rounded-full"
-                  onError={() => setStudentData(prev => ({ ...prev, imageError: true }))}
-                />
-              ) : (
-                <User className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 text-gray-600" />
-              )}
+          <div className="bg-white rounded-lg shadow-[0_4px_15px_rgba(0,0,0,0.2)] overflow-hidden flex flex-col items-center text-center">
+            <div className="bg-[#AAB491] w-full px-6 py-3">
+              <h2 className="text-lg font-semibold text-black">Student Details</h2>
             </div>
-            <h2 className="font-bold text-lg sm:text-2xl text-gray-800">{displayName}</h2>
-            <p className="text-sm text-gray-700 font-semibold mb-4">Student ID: {displayStudentId}</p>
-            <Link href="/dashboard/student">
-              <button className="bg-white text-gray-800 font-semibold px-4 py-2 rounded-lg text-sm hover:bg-gray-100">
-                View Details
-              </button>
-            </Link>
+            <div className="p-8 flex flex-col items-center flex-1 w-full">
+              <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-full overflow-hidden border-4 border-gray-100 shadow-md bg-gray-50 mb-4">
+                {studentData.profileImage && !studentData.imageError ? (
+                  <img
+                    src={studentData.profileImage}
+                    alt="Student Profile"
+                    className="w-full h-full object-cover"
+                    onError={() => setStudentData(prev => ({ ...prev, imageError: true }))}
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-gray-400 text-5xl">
+                    <User className="w-12 h-12 text-gray-400" />
+                  </div>
+                )}
+              </div>
+              <h2 className="text-xl font-bold text-gray-900 leading-tight mb-2">{displayName}</h2>
+              <div className="inline-block px-3 py-1 bg-gray-100 rounded-md text-xs font-semibold text-gray-600 uppercase mb-6">
+                ID: {displayStudentId}
+              </div>
+              <Link href="/dashboard/student" className="mt-auto w-full">
+                <button className="w-full bg-[#4F8DCF] hover:bg-[#3e72a8] text-white px-4 py-2.5 rounded-md font-semibold text-sm transition-colors shadow-sm">
+                  View Details
+                </button>
+              </Link>
+            </div>
           </div>
 
           {/* Fees Card */}
-          <div className="bg-white rounded-xl shadow-lg flex flex-col">
-            <h3 className="bg-[#9CAD8F] rounded-t-xl px-4 py-3 font-bold text-black">Fees Overview</h3>
-            <div className="p-6 space-y-3 flex-1 flex flex-col justify-center">
+          <div className="bg-white rounded-lg shadow-[0_4px_15px_rgba(0,0,0,0.2)] overflow-hidden flex flex-col">
+            <div className="bg-[#AAB491] w-full px-6 py-3">
+              <h3 className="text-lg font-semibold text-black">Fees Overview</h3>
+            </div>
+            <div className="p-6 space-y-4 flex-1 flex flex-col justify-center">
               <InfoRow label="Status:" value={feesData.status} color={feesData.status === 'Paid' ? 'text-green-600' : 'text-red-600'} />
               <InfoRow label="Total Fees:" value={feesData.totalAmount !== 'Loading...' ? `₹${feesData.totalAmount}` : feesData.totalAmount} />
               <InfoRow label="Amount Due:" value={feesData.amountDue !== 'Loading...' ? `₹${feesData.amountDue}` : feesData.amountDue} color={feesData.amountDue > 0 ? "text-red-600" : "text-green-600"} />
@@ -295,20 +415,25 @@ export default function DashboardCards() {
           </div>
 
           {/* Attendance Card */}
-          <div className="bg-white rounded-xl shadow-lg flex flex-col">
-            <h3 className="bg-[#9CAD8F] rounded-t-xl px-4 py-3 font-bold text-black">Attendance Summary</h3>
-            <div className="p-6 space-y-3 flex-1 flex flex-col justify-center">
+          <div className="bg-white rounded-lg shadow-[0_4px_15px_rgba(0,0,0,0.2)] overflow-hidden flex flex-col">
+            <div className="bg-[#AAB491] w-full px-6 py-3">
+              <h3 className="text-lg font-semibold text-black">Attendance Summary</h3>
+            </div>
+            <div className="p-6 space-y-4 flex-1 flex flex-col justify-center">
               <InfoRow label="Today:" value={attendance.today} color={attendance.today === "Present" ? "text-green-600" : "text-red-600"} />
               <InfoRow label="Present Days:" value={attendance.last7Days} />
               <InfoRow label="Total absences:" value={attendance.totalAbsences} />
+              <InfoRow label="Total leaves:" value={attendance.totalLeaves} />
               <InfoRow label="Last absence:" value={attendance.lastAbsenceDate} color="text-gray-500" />
             </div>
           </div>
 
           {/* Hostel Details */}
-          <div className="bg-white rounded-xl shadow-lg flex flex-col">
-            <h3 className="bg-[#9CAD8F] rounded-t-xl px-4 py-3 font-bold text-black">Hostel Details</h3>
-            <div className="p-6 space-y-3 flex-1 flex flex-col justify-center">
+          <div className="bg-white rounded-lg shadow-[0_4px_15px_rgba(0,0,0,0.2)] overflow-hidden flex flex-col">
+            <div className="bg-[#AAB491] w-full px-6 py-3">
+              <h3 className="text-lg font-semibold text-black">Hostel Details</h3>
+            </div>
+            <div className="p-6 space-y-4 flex-1 flex flex-col justify-center">
               <InfoRow label="Status:" value="Allocated" color="text-green-600" />
               <InfoRow label="Room:" value={studentData.roomNo} />
               <InfoRow label="Bed:" value={studentData.bedAllotment} />
@@ -321,10 +446,10 @@ export default function DashboardCards() {
   );
 }
 
-function InfoRow({ label, value, color = "text-black" }) {
+function InfoRow({ label, value, color = "text-gray-800" }) {
   return (
-    <div className="flex justify-between items-center">
-      <span className="text-black font-bold text-sm">{label}</span>
+    <div className="flex justify-between items-center border-b border-gray-100 pb-2 last:border-0 last:pb-0">
+      <span className="text-gray-600 font-semibold text-sm">{label}</span>
       <span className={`font-bold text-sm ${color}`}>{value}</span>
     </div>
   );

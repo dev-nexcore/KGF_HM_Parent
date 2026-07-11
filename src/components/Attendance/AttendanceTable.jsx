@@ -1,404 +1,352 @@
 "use client";
-
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-
-const statusColors = {
-  Present: "bg-green-500 text-white",
-  "Day Trip": "bg-[#4F8DCF] text-white",
-  "Extended Away": "bg-orange-500 text-white",
-  "Currently Away": "bg-red-500 text-white",
-  Out: "bg-red-500 text-white",
-};
+import { FiCalendar, FiArrowRight, FiArrowLeft, FiLogIn, FiLogOut } from 'react-icons/fi';
 
 export default function AttendancePage() {
-  const [attendanceData, setAttendanceData] = useState([]);
-  const [summaryStats, setSummaryStats] = useState({
-    presentDays: 0,
-    absentDays: 0,
-    outings: 0
-  });
+  const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [studentId, setStudentId] = useState(null);
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [attendanceStats, setAttendanceStats] = useState({ present: 0, absent: 0, leaves: 0 });
+  const [leaves, setLeaves] = useState([]);
+  const [admissionDate, setAdmissionDate] = useState(null);
+  const [currentStatus, setCurrentStatus] = useState('OUT');
 
   useEffect(() => {
-    const fetchAttendanceData = async () => {
+    const parentToken = localStorage.getItem('parentToken');
+    if (parentToken) {
       try {
-        setLoading(true);
-        
-        // Get student ID from parent token
-        const parentToken = localStorage.getItem('parentToken');
-        if (!parentToken) {
-          throw new Error('Parent token not found');
-        }
-
         const tokenPayload = JSON.parse(atob(parentToken.split('.')[1]));
-        const studentId = tokenPayload.studentId;
-        if (!studentId) {
-          throw new Error('Student ID not found in token');
-        }
-
-        // Fetch attendance log using axios
-        const response = await axios.get(
-          `${process.env.NEXT_PUBLIC_PROD_API_URL}/api/studentauth/attendance-log/${studentId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${parentToken}`,
-              'Content-Type': 'application/json'
-            }
-          }
-        );
-
-        console.log('Raw API Response:', response.data);
-
-        // Extract attendanceLog from response
-        const attendanceLog = response.data?.attendanceLog || [];
-        
-        if (!Array.isArray(attendanceLog)) {
-          throw new Error('Invalid attendance data format');
-        }
-
-        // Process and format the attendance data
-        const result = processAttendanceData(attendanceLog);
-        setAttendanceData(result.entries);
-        setSummaryStats(result.summary);
-
-      } catch (error) {
-        console.error('Error fetching attendance data:', error);
-        let errorMessage = 'Failed to load attendance data';
-        
-        if (error.response) {
-          errorMessage = `Server error: ${error.response.status} - ${error.response.statusText}`;
-        } else if (error.request) {
-          errorMessage = 'Network error - unable to reach server';
-        } else {
-          errorMessage = error.message;
-        }
-        setError(errorMessage);
-      } finally {
-        setLoading(false);
+        if (tokenPayload.studentId) setStudentId(tokenPayload.studentId);
+      } catch (e) {
+        console.error("Invalid token");
       }
-    };
-
-    fetchAttendanceData();
+    }
   }, []);
 
-  // Updated processAttendanceData function for actual API format
-  const processAttendanceData = (attendanceLog) => {
-    const processedData = [];
-    
-    if (!attendanceLog || attendanceLog.length === 0) {
-      return {
-        entries: [],
-        summary: { presentDays: 0, absentDays: 0, outings: 0 }
-      };
-    }
-    
-    // Track unique days and outings
-    const uniquePresentDays = new Set();
-    let absentDays = 0;
-    let outings = 0;
-    
-    // Process each attendance log entry
-    attendanceLog.forEach((entry) => {
-      // Process check-in
-      if (entry.checkInDate) {
-        const checkInTime = new Date(entry.checkInDate);
-        
-        const dateStr = checkInTime.toLocaleDateString('en-GB', {
-          day: '2-digit',
-          month: '2-digit',
-          year: 'numeric',
-          timeZone: 'Asia/Kolkata'
-        });
-        
-        const timeStr = checkInTime.toLocaleTimeString('en-US', {
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: true,
-          timeZone: 'Asia/Kolkata'
-        });
-        
-        uniquePresentDays.add(checkInTime.toDateString());
-        
-        processedData.push({
-          date: dateStr,
-          time: timeStr,
-          direction: 'IN',
-          deviceName: entry.checkInDevice || 'Student App',
-          verificationType: entry.checkInVerification || 'Selfie',
-          employeeCode: entry.studentId || 'N/A',
-          status: 'Present',
-          originalTimestamp: checkInTime
-        });
-      }
-      
-      // Process check-out
-      if (entry.checkOutDate) {
-        const checkOutTime = new Date(entry.checkOutDate);
-        
-        const dateStr = checkOutTime.toLocaleDateString('en-GB', {
-          day: '2-digit',
-          month: '2-digit',
-          year: 'numeric',
-          timeZone: 'Asia/Kolkata'
-        });
-        
-        const timeStr = checkOutTime.toLocaleTimeString('en-US', {
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: true,
-          timeZone: 'Asia/Kolkata'
-        });
-        
-        outings++;
-        
-        // Calculate hours away if both check-in and check-out exist
-        if (entry.checkInDate) {
-          const checkInTime = new Date(entry.checkInDate);
-          const hoursAway = (checkOutTime - checkInTime) / (1000 * 60 * 60);
-          if (hoursAway >= 24) {
-            absentDays += Math.floor(hoursAway / 24);
+  const fetchLogs = async () => {
+    if (!studentId) return;
+    try {
+      setLoading(true);
+      const parentToken = localStorage.getItem('parentToken');
+      const res = await axios.get(
+        `${process.env.NEXT_PUBLIC_PROD_API_URL}/api/studentauth/attendance-log/${studentId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${parentToken}`,
+            'Content-Type': 'application/json'
           }
         }
+      );
+      if (res.data && res.data.attendanceLog) {
+        const sortedLogs = [...res.data.attendanceLog].sort((a, b) => 
+          new Date(b.checkInDate) - new Date(a.checkInDate)
+        );
+        setLogs(sortedLogs);
         
-        processedData.push({
-          date: dateStr,
-          time: timeStr,
-          direction: 'OUT',
-          deviceName: entry.checkOutDevice || entry.checkInDevice || 'Student App',
-          verificationType: entry.checkOutVerification || entry.checkInVerification || 'Selfie',
-          employeeCode: entry.studentId || 'N/A',
-          status: 'Out',
-          originalTimestamp: checkOutTime
-        });
+        const latest = sortedLogs[0];
+        if (latest && !latest.checkOutDate) {
+          setCurrentStatus('IN');
+        } else {
+          setCurrentStatus('OUT');
+        }
       }
-    });
-    
-    // Sort by timestamp (newest first)
-    processedData.sort((a, b) => b.originalTimestamp - a.originalTimestamp);
-    
-    return {
-      entries: processedData,
-      summary: {
-        presentDays: uniquePresentDays.size,
-        absentDays: absentDays,
-        outings: outings
-      }
-    };
+    } catch (err) {
+      console.error("Error fetching attendance logs:", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // Loading state
-  if (loading) {
-    return (
-      <div className="space-y-6 p-2 sm:p-4 lg:p-6">
-        <div className="flex items-center ml-2 mb-4 sm:mb-6">
-          <div className="w-1 h-6 sm:h-7 bg-[#4F8DCF] mr-2 sm:mr-3"></div>
-          <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold">Attendance History</h2>
-        </div>
-        
-        <div className="w-full bg-white rounded-2xl shadow-inner border border-gray-100 p-8 flex items-center justify-center min-h-[400px]">
-          <div className="flex flex-col items-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
-            <p className="text-gray-600">Loading attendance data...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const fetchLeaves = async () => {
+    if (!studentId) return;
+    try {
+      const parentToken = localStorage.getItem('parentToken');
+      const res = await axios.get(
+        `${process.env.NEXT_PUBLIC_PROD_API_URL}/api/parentauth/leave-management`,
+        {
+          params: { studentId },
+          headers: {
+            Authorization: `Bearer ${parentToken}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      if (res.data && res.data.leaveHistory) {
+        setLeaves(res.data.leaveHistory);
+      }
+    } catch (err) {
+      console.error("Failed to fetch leaves", err);
+    }
+  };
 
-  // Error state
-  if (error) {
-    return (
-      <div className="space-y-6 p-2 sm:p-4 lg:p-6">
-        <div className="flex items-center ml-2 mb-4 sm:mb-6">
-          <div className="w-1 h-6 sm:h-7 bg-[#4F8DCF] mr-2 sm:mr-3"></div>
-          <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold">Attendance History</h2>
-        </div>
-        
-        <div className="w-full bg-white rounded-2xl shadow-inner border border-gray-100 p-8 flex items-center justify-center min-h-[400px]">
-          <div className="text-center">
-            <div className="text-red-600 text-lg font-semibold mb-2">Error Loading Data</div>
-            <p className="text-gray-600">{error}</p>
-            <button 
-              onClick={() => window.location.reload()} 
-              className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-            >
-              Retry
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const fetchProfile = async () => {
+    if (!studentId) return;
+    try {
+      const parentToken = localStorage.getItem('parentToken');
+      const res = await axios.get(
+        `${process.env.NEXT_PUBLIC_PROD_API_URL}/api/parentauth/student-profile?studentId=${studentId}`,
+        {
+          headers: { Authorization: `Bearer ${parentToken}` }
+        }
+      );
+      if (res.data && res.data.student) {
+        const adDate = res.data.student.admissionDate || res.data.student.createdAt;
+        if (adDate) {
+          const d = new Date(adDate);
+          d.setHours(0, 0, 0, 0);
+          setAdmissionDate(d);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to fetch profile", err);
+    }
+  };
 
-  // No data state
-  if (attendanceData.length === 0) {
-    return (
-      <div className="space-y-6 p-2 sm:p-4 lg:p-6">
-        <div className="flex items-center ml-2 mb-4 sm:mb-6">
-          <div className="w-1 h-6 sm:h-7 bg-[#4F8DCF] mr-2 sm:mr-3"></div>
-          <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold">Attendance History</h2>
-        </div>
-        
-        <div className="w-full bg-white rounded-2xl shadow-inner border border-gray-100 p-8 flex items-center justify-center min-h-[400px]">
-          <div className="text-center">
-            <div className="text-gray-600 text-lg font-semibold mb-2">No Attendance Records Found</div>
-            <p className="text-gray-500">No attendance data available for this student.</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  useEffect(() => {
+    fetchLogs();
+    fetchLeaves();
+    fetchProfile();
+  }, [studentId]);
+
+  useEffect(() => {
+    if (!currentDate) return;
+    let presentCount = 0;
+    let absentCount = 0;
+    
+    const daysInMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      const iterDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
+      
+      const dateStr = iterDate.toDateString();
+      const marked = logs.some(log => new Date(log.checkInDate).toDateString() === dateStr);
+      
+      const onLeave = leaves.some(leave => {
+        if (leave.status !== 'approved' && leave.status !== 'warden_approved') return false;
+        const start = new Date(leave.startDate);
+        start.setHours(0, 0, 0, 0);
+        const end = new Date(leave.endDate);
+        end.setHours(23, 59, 59, 999);
+        return iterDate >= start && iterDate <= end;
+      });
+
+      const isBeforeAdmission = admissionDate ? iterDate < admissionDate : false;
+      const isAbsent = !marked && !onLeave && iterDate < now && !isBeforeAdmission;
+
+      if (marked) {
+        presentCount++;
+      } else if (isAbsent) {
+        absentCount++;
+      }
+    }
+
+    setAttendanceStats({
+      present: presentCount,
+      absent: absentCount,
+      leaves: 0
+    });
+  }, [currentDate, logs, leaves, admissionDate]);
+
+  const getDaysInMonth = (year, month) => new Date(year, month + 1, 0).getDate();
+  const getFirstDayOfMonth = (year, month) => new Date(year, month, 1).getDay();
+
+  const daysInMonth = getDaysInMonth(currentDate.getFullYear(), currentDate.getMonth());
+  const firstDay = getFirstDayOfMonth(currentDate.getFullYear(), currentDate.getMonth());
+  
+  const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+  const prevMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
+  const nextMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
+
+  const hasAttendance = (day) => {
+    const d = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
+    const dateStr = d.toDateString();
+    return logs.some(log => new Date(log.checkInDate).toDateString() === dateStr);
+  };
+
+  const isOnLeave = (day) => {
+    const d = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
+    d.setHours(0, 0, 0, 0);
+    return leaves.some(leave => {
+      if (leave.status !== 'approved' && leave.status !== 'warden_approved') return false;
+      const start = new Date(leave.startDate);
+      start.setHours(0, 0, 0, 0);
+      const end = new Date(leave.endDate);
+      end.setHours(23, 59, 59, 999);
+      return d >= start && d <= end;
+    });
+  };
 
   return (
-    <div className="space-y-6 p-2 sm:p-4 lg:p-6">
-      {/* Header */}
-      <div className="flex items-center ml-2 mb-4 sm:mb-6">
-        <div className="w-1 h-6 sm:h-7 bg-[#4F8DCF] mr-2 sm:mr-3"></div>
-        <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold">Attendance History</h2>
-      </div>
+    <div className="bg-[#ffffff] px-6 sm:px-8 lg:px-2.5 py-2 min-h-screen font-sans w-full pb-10">
+      <div className="max-w-7xl mx-auto space-y-6 mt-4">
+        {/* Page Title */}
+        <div className="flex items-center justify-between mb-6 mt-2">
+          <h2 className="text-lg sm:text-xl md:text-2xl font-semibold text-black border-l-4 border-[#4F8CCF] pl-2">
+            Attendance History
+          </h2>
+        </div>
 
-      {/* Enhanced Summary Statistics */}
-      <div className="mb-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-          <div className="text-green-800 font-semibold">Present Days</div>
-          <div className="text-2xl font-bold text-green-600">
-            {summaryStats.presentDays}
+        {/* Header Section */}
+        <div className="bg-white rounded-lg shadow-[0_4px_15px_rgba(0,0,0,0.2)] w-full">
+          <div className="bg-[#AAB491] px-6 py-3 rounded-t-lg">
+            <h2 className="text-lg font-semibold text-black">Attendance Summary</h2>
           </div>
-          <div className="text-xs text-green-600 mt-1">
-            Unique calendar days
-          </div>
-        </div>
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <div className="text-red-800 font-semibold">Days Away</div>
-          <div className="text-2xl font-bold text-red-600">
-            {summaryStats.absentDays}
-          </div>
-          <div className="text-xs text-red-600 mt-1">
-            24+ hours away
-          </div>
-        </div>
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <div className="text-blue-800 font-semibold">Total Outings</div>
-          <div className="text-2xl font-bold text-blue-600">
-            {summaryStats.outings}
-          </div>
-          <div className="text-xs text-blue-600 mt-1">
-            Times checked out
-          </div>
-        </div>
-      </div>
-
-      {/* Last Device Info */}
-      {attendanceData.length > 0 && (
-        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
-          <h3 className="text-sm font-semibold text-gray-700 mb-2">Last Entry Details</h3>
-          <div className="grid grid-cols-2 gap-4 text-sm">
-            <div>
-              <span className="text-gray-600">Device:</span>{' '}
-              <span className="font-medium">{attendanceData[0].deviceName}</span>
-            </div>
-            <div>
-              <span className="text-gray-600">Verification:</span>{' '}
-              <span className="font-medium">{attendanceData[0].verificationType}</span>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Main White Container */}
-      <div className="w-full bg-white rounded-2xl shadow-inner border border-gray-100 overflow-hidden" style={{ boxShadow: 'inset 0 4px 10px rgba(0, 0, 0, 0.1)' }}>
-        <div className="w-full flex flex-col items-center p-4 md:p-5 pb-4">
-          
-          {/* Mobile View */}
-          <div className="md:hidden w-full max-w-xs sm:max-w-sm">
-            <div className="p-3 sm:p-5 mb-3 rounded" style={{ backgroundColor: '#D9D9D9' }}>
-              <div className="grid grid-cols-4 gap-2 sm:gap-3 text-sm sm:text-base font-bold text-gray-800">
-                <div className="text-center">Date</div>
-                <div className="text-center">Time</div>
-                <div className="text-center">Type</div>
-                <div className="text-center">Status</div>
+          <div className="p-7 flex flex-col md:flex-row justify-between items-center gap-6">
+            <div className="flex items-center gap-4">
+              <div className={`p-4 rounded-lg ${currentStatus === 'IN' ? 'bg-green-100 text-green-600' : 'bg-orange-100 text-orange-600'}`}>
+                {currentStatus === 'IN' ? <FiLogIn size={32} /> : <FiLogOut size={32} />}
+              </div>
+              <div>
+                <p className="text-base font-semibold text-black">
+                  Status: <span className={currentStatus === 'IN' ? 'text-green-600' : 'text-orange-600'}>{currentStatus === 'IN' ? 'Checked IN' : 'Checked OUT'}</span>
+                </p>
               </div>
             </div>
 
-            <div className="space-y-2 sm:space-y-3 mb-0">
-              {attendanceData.map((row, i) => (
-                <div
-                  key={i}
-                  className={`bg-white border border-gray-200 p-3 sm:p-5 rounded ${i === attendanceData.length - 1 ? 'mb-0' : ''}`}
-                >
-                  <div className="grid grid-cols-4 gap-2 sm:gap-3 text-xs sm:text-sm">
-                    <div className="text-center font-bold text-gray-800 py-1">{row.date}</div>
-                    <div className="text-center font-bold text-gray-600 py-1">{row.time}</div>
-                    <div className="text-center font-bold text-gray-600 py-1">{row.direction}</div>
-                    <div className="text-center py-1">
-                      <span
-                        className={`inline-flex items-center justify-center px-1 sm:px-2 py-1 text-xs font-semibold rounded-sm ${statusColors[row.status]}`}
-                      >
-                        {row.status}
-                      </span>
+            <div className="flex gap-4 flex-wrap">
+              <div className="bg-blue-50 px-6 py-2 rounded-lg border border-blue-200 text-center min-w-[100px]">
+                <p className="text-xs font-semibold text-blue-600 uppercase tracking-wider">Present</p>
+                <p className="text-xl font-bold text-blue-700">{attendanceStats.present}</p>
+              </div>
+              <div className="bg-red-50 px-6 py-2 rounded-lg border border-red-200 text-center min-w-[100px]">
+                <p className="text-xs font-semibold text-red-600 uppercase tracking-wider">Absent</p>
+                <p className="text-xl font-bold text-red-700">{attendanceStats.absent}</p>
+              </div>
+              <div className="bg-gray-50 px-6 py-2 rounded-lg border border-gray-200 text-center min-w-[100px]">
+                <p className="text-xs font-semibold text-gray-600 uppercase tracking-wider">Total</p>
+                <p className="text-xl font-bold text-gray-700">{attendanceStats.present + attendanceStats.absent}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          
+          {/* Calendar Section */}
+          <div className="lg:col-span-1 bg-white rounded-lg shadow-[0_4px_15px_rgba(0,0,0,0.2)] w-full">
+            <div className="bg-[#AAB491] px-6 py-3 rounded-t-lg flex justify-between items-center">
+              <button onClick={prevMonth} className="text-black hover:bg-black/10 p-1 rounded transition-colors"><FiArrowLeft /></button>
+              <h3 className="text-lg font-semibold text-black">
+                {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
+              </h3>
+              <button onClick={nextMonth} className="text-black hover:bg-black/10 p-1 rounded transition-colors"><FiArrowRight /></button>
+            </div>
+            
+            <div className="p-7">
+              <div className="grid grid-cols-7 gap-1 mb-2">
+                {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
+                  <div key={i} className="text-center text-sm font-semibold text-gray-600 p-2">{d}</div>
+                ))}
+              </div>
+              
+              <div className="grid grid-cols-7 gap-1">
+                {[...Array(firstDay)].map((_, i) => <div key={`empty-${i}`} className="p-2"></div>)}
+                {[...Array(daysInMonth)].map((_, i) => {
+                  const day = i + 1;
+                  const iterDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
+                  const marked = hasAttendance(day);
+                  const onLeave = isOnLeave(day);
+                  const isToday = iterDate.toDateString() === new Date().toDateString();
+                  const isSelected = iterDate.toDateString() === selectedDate.toDateString();
+                  
+                  const now = new Date();
+                  now.setHours(0, 0, 0, 0);
+                  const isBeforeAdmission = admissionDate ? iterDate < admissionDate : false;
+                  const isAbsent = !marked && !onLeave && iterDate < now && !isBeforeAdmission;
+
+                  return (
+                    <div 
+                      key={day} 
+                      onClick={() => setSelectedDate(iterDate)}
+                      className={`aspect-square flex items-center justify-center text-sm font-semibold rounded-lg transition-all relative cursor-pointer ${
+                        isSelected ? 'ring-2 ring-offset-2 ring-blue-500 ' : ''
+                      }${
+                        marked ? 'bg-blue-500 text-white' : 
+                        onLeave ? 'bg-orange-500 text-white' :
+                        isAbsent ? 'bg-red-500 text-white' :
+                        isToday ? 'bg-gray-100 text-black border border-[#4F8CCF]' : 'text-black hover:bg-gray-100'
+                      }`}
+                    >
+                      {day}
                     </div>
-                  </div>
-                </div>
-              ))}
+                  );
+                })}
+              </div>
+              
+              <div className="mt-6 pt-6 border-t border-gray-200 flex flex-wrap items-center gap-4 text-sm font-semibold text-gray-600">
+                <div className="flex items-center gap-2"><div className="w-3 h-3 bg-blue-500 rounded-full"></div> Present</div>
+                <div className="flex items-center gap-2"><div className="w-3 h-3 bg-red-500 rounded-full"></div> Absent</div>
+                <div className="flex items-center gap-2"><div className="w-3 h-3 bg-orange-500 rounded-full"></div> Leave</div>
+                <div className="flex items-center gap-2"><div className="w-3 h-3 bg-gray-100 border border-[#4F8CCF] rounded-full"></div> Today</div>
+              </div>
             </div>
           </div>
 
-          {/* Desktop Table */}
-          <div className="hidden md:block w-full max-w-none lg:max-w-6xl xl:max-w-7xl">
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[600px]">
-                <thead>
-                  <tr style={{ backgroundColor: '#D9D9D9' }}>
-                    <th className="py-3 md:py-4 px-4 md:px-6 font-bold text-gray-800 text-center text-base md:text-lg">
-                      Date
-                    </th>
-                    <th className="py-3 md:py-4 px-4 md:px-6 font-bold text-gray-800 text-center text-base md:text-lg">
-                      Time
-                    </th>
-                    <th className="py-3 md:py-4 px-4 md:px-6 font-bold text-gray-800 text-center text-base md:text-lg">
-                      Type
-                    </th>
-                    <th className="py-3 md:py-4 px-4 md:px-6 font-bold text-gray-800 text-center text-base md:text-lg">
-                      Device
-                    </th>
-                    <th className="py-3 md:py-4 px-4 md:px-6 font-bold text-gray-800 text-center text-base md:text-lg">
-                      Status
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {attendanceData.map((row, i) => (
-                    <tr
-                      key={i}
-                      className="hover:bg-gray-50 transition-colors"
-                    >
-                      <td className="py-3 md:py-4 px-4 md:px-6 font-bold text-gray-700 text-center text-sm md:text-base">
-                        {row.date}
-                      </td>
-                      <td className="py-3 md:py-4 px-4 md:px-6 font-bold text-gray-700 text-center text-sm md:text-base">
-                        {row.time}
-                      </td>
-                      <td className="py-3 md:py-4 px-4 md:px-6 font-bold text-gray-700 text-center text-sm md:text-base">
-                        {row.direction}
-                      </td>
-                      <td className="py-3 md:py-4 px-4 md:px-6 font-bold text-gray-700 text-center text-sm md:text-base">
-                        {row.deviceName}
-                      </td>
-                      <td className="py-3 md:py-4 px-4 md:px-6 text-center">
-                        <span
-                          className={`inline-flex items-center justify-center min-w-[90px] md:min-w-[110px] lg:min-w-[120px] px-3 md:px-4 py-1 md:py-2 font-semibold text-xs md:text-sm rounded-sm ${statusColors[row.status]}`}
-                        >
-                          {row.status}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          {/* History Section */}
+          {(() => {
+            const filteredLogs = logs.filter(log => new Date(log.checkInDate).toDateString() === selectedDate.toDateString());
+            return (
+              <div className="lg:col-span-2 bg-white rounded-lg shadow-[0_4px_15px_rgba(0,0,0,0.2)] w-full flex flex-col">
+                <div className="bg-[#AAB491] px-6 py-3 rounded-t-lg flex justify-between items-center">
+                  <h3 className="text-lg font-semibold text-black">Attendance Records</h3>
+                  <div className="px-3 py-1 bg-white text-black rounded-lg text-sm font-semibold">{filteredLogs.length} Records</div>
+                </div>
+                
+                <div className="flex-1 overflow-y-auto max-h-[500px] p-7">
+                  {loading ? (
+                    <div className="p-10 flex flex-col items-center justify-center gap-4">
+                      <div className="w-8 h-8 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin"></div>
+                      <p className="text-sm font-semibold text-gray-600">Loading Logs...</p>
+                    </div>
+                  ) : filteredLogs.length === 0 ? (
+                    <div className="p-10 text-center">
+                      <FiCalendar className="mx-auto text-4xl text-gray-300 mb-4" />
+                      <p className="text-base font-semibold text-gray-500">No records found for {selectedDate.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })}</p>
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-gray-200">
+                      {filteredLogs.map((log, idx) => (
+                        <div key={idx} className="py-4 hover:bg-gray-50 transition-colors flex justify-between items-center group px-4 rounded-lg">
+                          <div className="flex items-center gap-4">
+                            <div className="w-14 h-14 rounded-lg bg-gray-100 flex flex-col items-center justify-center border border-gray-200 group-hover:bg-white transition-colors">
+                              <span className="text-xs font-semibold text-gray-500">{new Date(log.checkInDate).toLocaleDateString('en-US', { month: 'short' })}</span>
+                              <span className="text-lg font-semibold text-black leading-none">{new Date(log.checkInDate).getDate()}</span>
+                            </div>
+                            <div>
+                              <p className="text-sm font-semibold text-black flex items-center gap-2">
+                                <FiLogIn className="text-green-500" size={14} />
+                                {new Date(log.checkInDate).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}
+                                {log.checkOutDate && (
+                                  <>
+                                    <span className="text-gray-300 mx-1">|</span>
+                                    <FiLogOut className="text-orange-500" size={14} />
+                                    {new Date(log.checkOutDate).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}
+                                  </>
+                                )}
+                              </p>
+                            </div>
+                          </div>
+                          
+                          <div className={`px-4 py-1.5 rounded-lg text-xs font-semibold ${
+                            log.checkOutDate ? 'bg-gray-200 text-gray-700' : 'bg-green-100 text-green-700'
+                          }`}>
+                            {log.checkOutDate ? 'Completed' : 'Active'}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
+
         </div>
       </div>
     </div>
