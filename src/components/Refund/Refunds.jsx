@@ -259,48 +259,43 @@ export default function Refunds() {
         </div>
 
         {/* Mobile View */}
-        <div className="md:hidden space-y-3 sm:space-y-4">
+        <div className="md:hidden space-y-4">
           {refunds.length === 0 ? (
             <div className="text-center py-6 text-gray-500">No refund requests found.</div>
           ) : (
             refunds.map((refund, index) => (
-              <div key={index} className="bg-gray-50 rounded-lg p-3 border border-gray-200">
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-xs font-semibold text-gray-600">Refund Type:</span>
-                    <span className="text-sm font-medium text-gray-800">
+              <div key={index} className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+                <div className="p-4 border-b border-gray-100 flex justify-between items-start">
+                  <div>
+                    <h3 className="font-bold text-gray-800 text-sm">
                       {refund.refundType === 'Others' && refund.otherRefundType
                         ? `Other (${refund.otherRefundType})`
                         : refund.refundType}
-                    </span>
+                    </h3>
+                    <p className="text-xs text-gray-500 mt-1 uppercase font-semibold">Date: {formatDate(refund.requestedAt)}</p>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-xs font-semibold text-gray-600">Date:</span>
-                    <span className="text-sm text-gray-800">{formatDate(refund.requestedAt)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-xs font-semibold text-gray-600">Amount:</span>
-                    <span className="text-sm font-medium text-gray-800">₹{refund.amount}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-xs font-semibold text-gray-600">Reason:</span>
-                    <span className="text-sm text-gray-800 text-right max-w-[60%]">{refund.reason}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs font-semibold text-gray-600">Status:</span>
-                    <span
-                      className={`px-2 py-1 rounded-md text-xs font-medium ${refund.status === 'approved'
-                        ? 'bg-green-500 text-white'
+                  <span
+                    className={`inline-block px-3 py-1 text-[10px] sm:text-xs font-bold rounded-full shrink-0 ${refund.status === 'approved'
+                        ? 'bg-green-100 text-green-700'
                         : refund.status === 'rejected'
-                          ? 'bg-red-500 text-white'
-                          : 'bg-[#4F8DCF] text-white'
-                        }`}
-                    >
-                      {refund.status
-                        ? refund.status.charAt(0).toUpperCase() + refund.status.slice(1)
-                        : 'Pending'}
-                    </span>
+                          ? 'bg-red-100 text-red-700'
+                          : 'bg-yellow-100 text-yellow-700'
+                      }`}
+                  >
+                    {refund.status ? refund.status.charAt(0).toUpperCase() + refund.status.slice(1) : 'Pending'}
+                  </span>
+                </div>
+                
+                <div className="px-4 py-3 bg-gray-50/50 flex justify-between items-center text-xs">
+                  <div>
+                    <span className="block text-[10px] text-gray-400 font-semibold uppercase mb-0.5">Amount</span>
+                    <span className="text-lg font-bold text-[#4F8DCF]">₹{refund.amount}</span>
                   </div>
+                </div>
+
+                <div className="p-4 border-t border-gray-100 bg-white">
+                  <span className="block text-[10px] text-gray-400 font-semibold uppercase mb-1">Reason</span>
+                  <p className="text-sm text-gray-700 leading-relaxed">{refund.reason}</p>
                 </div>
               </div>
             ))

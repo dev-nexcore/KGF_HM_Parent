@@ -389,7 +389,7 @@ export default function MakePaymentsPage({ onPayNowClick }) {
             <h2 className="text-lg font-semibold text-black">Pending Payments</h2>
           </div>
           <div className="p-5 sm:p-8">
-            <div className="overflow-x-auto">
+            <div className="hidden sm:block overflow-x-auto">
               {fees.length === 0 ? (
                 <div className="text-center py-10">
                   <p className="text-gray-500 font-semibold text-lg">No pending payments found. You are all caught up!</p>
@@ -441,6 +441,52 @@ export default function MakePaymentsPage({ onPayNowClick }) {
                     ))}
                   </tbody>
                 </table>
+              )}
+            </div>
+
+            <div className="sm:hidden space-y-4">
+              {fees.length === 0 ? (
+                <div className="text-center py-10">
+                  <p className="text-gray-500 font-semibold text-sm">No pending payments found. You are all caught up!</p>
+                </div>
+              ) : (
+                fees.map((fee, idx) => (
+                  <div key={idx} className="bg-white border border-gray-100 rounded-lg p-4 shadow-sm">
+                    <div className="flex justify-between items-start mb-3">
+                      <div>
+                        <h4 className="font-bold text-gray-800">{fee.type}</h4>
+                        <p className="text-xs text-gray-500 mt-1 uppercase font-semibold">Due: {fee.dueDate}</p>
+                      </div>
+                      <span className={`${fee.status === 'Overdue' ? 'bg-red-100 text-red-700' : fee.status === 'Pending Verification' ? 'bg-blue-100 text-blue-700' : 'bg-yellow-100 text-yellow-700'} px-2.5 py-1 rounded-full text-[10px] font-bold uppercase shrink-0`}>
+                        {fee.status}
+                      </span>
+                    </div>
+                    <div className="mt-4 pt-4 border-t border-gray-50 space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs text-gray-500 font-semibold uppercase">Amount</span>
+                        <span className="text-lg font-bold text-gray-900">₹{fee.amount?.toLocaleString('en-IN')}</span>
+                      </div>
+                      <div className="flex gap-2">
+                        <button 
+                          onClick={() => downloadReceipt(fee, 'view')}
+                          className="flex-1 flex items-center justify-center bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2.5 rounded-md text-xs transition-colors"
+                        >
+                          <Eye size={14} className="mr-1" /> View
+                        </button>
+                        <button 
+                          onClick={() => {
+                            if (onPayNowClick) onPayNowClick(fee);
+                            else handlePayNow(fee);
+                          }}
+                          disabled={payingId === fee.id || fee.status === 'Pending Verification'}
+                          className="flex-[2] flex items-center justify-center bg-[#4F8DCF] hover:bg-[#3e72a8] text-white font-semibold py-2.5 rounded-md text-xs shadow disabled:opacity-50 transition-colors"
+                        >
+                          {payingId === fee.id ? 'Processing...' : fee.status === 'Pending Verification' ? 'Verifying...' : 'Pay Now'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))
               )}
             </div>
           </div>

@@ -238,56 +238,48 @@ export default function FeesSection() {
           <div className="w-full flex flex-col items-center p-4 md:p-5 pb-4">
 
             {/* Mobile View */}
-            <div className="md:hidden w-full max-w-xs sm:max-w-sm">
-              <div className="p-3 sm:p-5 mb-3 rounded" style={{ backgroundColor: '#D9D9D9' }}>
-                <div className="grid grid-cols-4 gap-2 sm:gap-3 text-sm sm:text-base font-bold text-gray-800">
-                  <div className="text-center">Type</div>
-                  <div className="text-center">Amount</div>
-                  <div className="text-center">Due Date</div>
-                  <div className="text-center">Status</div>
-                </div>
-              </div>
-
-              <div className="space-y-2 sm:space-y-3 mb-0">
+            <div className="md:hidden w-full max-w-full">
+              <div className="space-y-4">
                 {feesData.length === 0 ? (
-                  <p className="text-center py-4 text-gray-500">No records found</p>
+                  <p className="text-center py-8 text-gray-500">No records found</p>
                 ) : (
                   feesData.map((row, i) => (
                     <div
                       key={i}
-                      className={`bg-white border border-gray-200 p-3 sm:p-5 rounded ${i === feesData.length - 1 ? 'mb-0' : ''}`}
+                      className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden"
                     >
-                      <div className="grid grid-cols-4 gap-2 sm:gap-3 text-xs sm:text-sm items-center">
-                        <div className="text-center font-bold text-gray-800 py-1">{row.type}</div>
-                        <div className="text-center font-bold text-gray-600 py-1">{row.amountDisplay}</div>
-                        <div className="text-center font-bold text-gray-600 py-1">{row.due}</div>
-                        <div className="flex justify-center items-center py-1">
-                          <span
-                            className={`flex items-center justify-center w-[60px] sm:w-[70px] h-[28px] sm:h-[32px] text-xs font-semibold rounded-sm ${statusColors[row.status] || 'bg-gray-400 text-white'}`}
+                      <div className="p-4 border-b border-gray-100 flex justify-between items-start">
+                        <div>
+                          <h3 className="font-bold text-gray-800 text-sm">{row.type}</h3>
+                          <p className="text-lg font-bold text-[#4F8DCF] mt-1">{row.amountDisplay}</p>
+                        </div>
+                        <span className={`inline-block px-3 py-1 text-[10px] sm:text-xs font-bold rounded-full ${statusColors[row.status] || 'bg-gray-400 text-white'}`}>
+                          {row.status}
+                        </span>
+                      </div>
+                      <div className="px-4 py-3 bg-gray-50/50 flex flex-wrap justify-between gap-2 text-xs text-gray-600">
+                        <div>
+                          <span className="block text-[10px] text-gray-400 font-semibold uppercase mb-0.5">Due Date</span>
+                          <span className="font-medium text-gray-700">{row.due}</span>
+                        </div>
+                        <div className="text-right">
+                          <span className="block text-[10px] text-gray-400 font-semibold uppercase mb-0.5">Payment Date</span>
+                          <span className="font-medium text-gray-700">{row.paid}</span>
+                        </div>
+                      </div>
+                      {(row.status === 'Paid' || row.status === 'Completed') && (
+                        <div className="p-3 border-t border-gray-100 bg-white">
+                          <button
+                            onClick={() => downloadReceipt(row)}
+                            className="w-full flex items-center justify-center gap-2 py-2 bg-[#4F8DCF] hover:bg-blue-700 text-white text-xs font-bold rounded-lg shadow-sm transition"
                           >
-                            {row.status}
-                          </span>
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3" />
+                            </svg>
+                            Download Receipt
+                          </button>
                         </div>
-                      </div>
-                      <div className="mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-gray-200 space-y-2">
-                        <div className="text-center">
-                          <span className="text-xs font-bold text-gray-500">Payment Date: </span>
-                          <span className="text-xs sm:text-sm font-bold text-gray-700">{row.paid}</span>
-                        </div>
-                        {(row.status === 'Paid' || row.status === 'Completed') && (
-                          <div className="flex justify-center">
-                            <button
-                              onClick={() => downloadReceipt(row)}
-                              className="flex items-center gap-1.5 px-3 py-1.5 bg-[#4F8DCF] hover:bg-blue-700 text-white text-[10px] sm:text-xs font-bold rounded-lg shadow transition"
-                            >
-                              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3" />
-                              </svg>
-                              Download Receipt
-                            </button>
-                          </div>
-                        )}
-                      </div>
+                      )}
                     </div>
                   ))
                 )}
@@ -363,34 +355,30 @@ export default function FeesSection() {
         <div className="w-full bg-white rounded-2xl shadow-inner border border-gray-100 overflow-hidden" style={{ boxShadow: 'inset 0 4px 10px rgba(0, 0, 0, 0.1)' }}>
           <div className="w-full flex flex-col items-center p-4 md:p-5 pb-4">
             
-            <div className="md:hidden w-full max-w-xs sm:max-w-sm">
-              <div className="p-3 sm:p-5 mb-3 rounded" style={{ backgroundColor: '#D9D9D9' }}>
-                <div className="grid grid-cols-4 gap-2 sm:gap-3 text-sm sm:text-base font-bold text-gray-800">
-                  <div className="text-center">ID</div>
-                  <div className="text-center">Date</div>
-                  <div className="text-center">Amount</div>
-                  <div className="text-center">Status</div>
-                </div>
-              </div>
-
-              <div className="space-y-2 sm:space-y-3 mb-0">
+            <div className="md:hidden w-full max-w-full">
+              <div className="space-y-4">
                 {transactionData.length === 0 ? (
-                  <p className="text-center py-4 text-gray-500">No transactions found</p>
+                  <p className="text-center py-8 text-gray-500">No transactions found</p>
                 ) : (
                   transactionData.map((row, i) => (
-                    <div key={i} className={`bg-white border border-gray-200 p-3 sm:p-5 rounded ${i === transactionData.length - 1 ? 'mb-0' : ''}`}>
-                      <div className="grid grid-cols-4 gap-2 sm:gap-3 text-xs sm:text-sm items-center">
-                        <div className="text-center font-bold text-gray-800 py-1 break-all">{row.id}</div>
-                        <div className="text-center font-bold text-gray-600 py-1">{row.date}</div>
-                        <div className="text-center font-bold text-gray-600 py-1">{row.amount}</div>
-                        <div className="flex justify-center items-center py-1">
-                          <span className={`flex items-center justify-center w-[80px] sm:w-[85px] h-[30px] sm:h-[34px] text-xs font-semibold rounded-sm ${statusColors[row.status] || 'bg-gray-400 text-white'}`}>{row.status}</span>
+                    <div key={i} className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+                      <div className="p-4 border-b border-gray-100 flex justify-between items-start">
+                        <div>
+                          <h3 className="font-bold text-gray-800 text-xs sm:text-sm break-all">{row.id}</h3>
+                          <p className="text-lg font-bold text-gray-700 mt-1">{row.amount}</p>
                         </div>
+                        <span className={`shrink-0 inline-block px-3 py-1 text-[10px] sm:text-xs font-bold rounded-full ${statusColors[row.status] || 'bg-gray-400 text-white'}`}>
+                          {row.status}
+                        </span>
                       </div>
-                      <div className="mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-gray-200">
-                        <div className="text-center">
-                          <span className="text-xs font-bold text-gray-500">Method: </span>
-                          <span className="text-xs sm:text-sm font-bold text-gray-700">{row.method}</span>
+                      <div className="px-4 py-3 bg-gray-50/50 flex justify-between items-center text-xs text-gray-600">
+                        <div>
+                          <span className="block text-[10px] text-gray-400 font-semibold uppercase mb-0.5">Date</span>
+                          <span className="font-medium text-gray-700">{row.date}</span>
+                        </div>
+                        <div className="text-right">
+                          <span className="block text-[10px] text-gray-400 font-semibold uppercase mb-0.5">Method</span>
+                          <span className="font-medium text-gray-700">{row.method}</span>
                         </div>
                       </div>
                     </div>

@@ -209,18 +209,18 @@ export default function AttendancePage() {
               </div>
             </div>
 
-            <div className="flex gap-4 flex-wrap">
-              <div className="bg-blue-50 px-6 py-2 rounded-lg border border-blue-200 text-center min-w-[100px]">
-                <p className="text-xs font-semibold text-blue-600 uppercase tracking-wider">Present</p>
-                <p className="text-xl font-bold text-blue-700">{attendanceStats.present}</p>
+            <div className="flex gap-2 sm:gap-4 flex-wrap w-full md:w-auto justify-between sm:justify-end">
+              <div className="bg-blue-50 px-3 sm:px-6 py-2 rounded-lg border border-blue-200 text-center flex-1 sm:flex-none min-w-[80px] sm:min-w-[100px]">
+                <p className="text-[10px] sm:text-xs font-semibold text-blue-600 uppercase tracking-wider">Present</p>
+                <p className="text-lg sm:text-xl font-bold text-blue-700">{attendanceStats.present}</p>
               </div>
-              <div className="bg-red-50 px-6 py-2 rounded-lg border border-red-200 text-center min-w-[100px]">
-                <p className="text-xs font-semibold text-red-600 uppercase tracking-wider">Absent</p>
-                <p className="text-xl font-bold text-red-700">{attendanceStats.absent}</p>
+              <div className="bg-red-50 px-3 sm:px-6 py-2 rounded-lg border border-red-200 text-center flex-1 sm:flex-none min-w-[80px] sm:min-w-[100px]">
+                <p className="text-[10px] sm:text-xs font-semibold text-red-600 uppercase tracking-wider">Absent</p>
+                <p className="text-lg sm:text-xl font-bold text-red-700">{attendanceStats.absent}</p>
               </div>
-              <div className="bg-gray-50 px-6 py-2 rounded-lg border border-gray-200 text-center min-w-[100px]">
-                <p className="text-xs font-semibold text-gray-600 uppercase tracking-wider">Total</p>
-                <p className="text-xl font-bold text-gray-700">{attendanceStats.present + attendanceStats.absent}</p>
+              <div className="bg-gray-50 px-3 sm:px-6 py-2 rounded-lg border border-gray-200 text-center flex-1 sm:flex-none min-w-[80px] sm:min-w-[100px]">
+                <p className="text-[10px] sm:text-xs font-semibold text-gray-600 uppercase tracking-wider">Total</p>
+                <p className="text-lg sm:text-xl font-bold text-gray-700">{attendanceStats.present + attendanceStats.absent}</p>
               </div>
             </div>
           </div>
@@ -241,12 +241,12 @@ export default function AttendancePage() {
             <div className="p-7">
               <div className="grid grid-cols-7 gap-1 mb-2">
                 {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
-                  <div key={i} className="text-center text-sm font-semibold text-gray-600 p-2">{d}</div>
+                  <div key={i} className="text-center text-xs sm:text-sm font-semibold text-gray-600 p-1 sm:p-2">{d}</div>
                 ))}
               </div>
               
               <div className="grid grid-cols-7 gap-1">
-                {[...Array(firstDay)].map((_, i) => <div key={`empty-${i}`} className="p-2"></div>)}
+                {[...Array(firstDay)].map((_, i) => <div key={`empty-${i}`} className="p-1 sm:p-2"></div>)}
                 {[...Array(daysInMonth)].map((_, i) => {
                   const day = i + 1;
                   const iterDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
@@ -298,7 +298,7 @@ export default function AttendancePage() {
                   <div className="px-3 py-1 bg-white text-black rounded-lg text-sm font-semibold">{filteredLogs.length} Records</div>
                 </div>
                 
-                <div className="flex-1 overflow-y-auto max-h-[500px] p-7">
+                <div className="flex-1 overflow-y-auto max-h-[500px] p-4 sm:p-7">
                   {loading ? (
                     <div className="p-10 flex flex-col items-center justify-center gap-4">
                       <div className="w-8 h-8 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin"></div>
@@ -312,28 +312,32 @@ export default function AttendancePage() {
                   ) : (
                     <div className="divide-y divide-gray-200">
                       {filteredLogs.map((log, idx) => (
-                        <div key={idx} className="py-4 hover:bg-gray-50 transition-colors flex justify-between items-center group px-4 rounded-lg">
-                          <div className="flex items-center gap-4">
-                            <div className="w-14 h-14 rounded-lg bg-gray-100 flex flex-col items-center justify-center border border-gray-200 group-hover:bg-white transition-colors">
-                              <span className="text-xs font-semibold text-gray-500">{new Date(log.checkInDate).toLocaleDateString('en-US', { month: 'short' })}</span>
-                              <span className="text-lg font-semibold text-black leading-none">{new Date(log.checkInDate).getDate()}</span>
+                        <div key={idx} className="py-4 hover:bg-gray-50 transition-colors flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4 group px-2 sm:px-4 rounded-lg">
+                          <div className="flex items-center gap-3 sm:gap-4 w-full sm:w-auto">
+                            <div className="shrink-0 w-12 h-12 sm:w-14 sm:h-14 rounded-lg bg-gray-100 flex flex-col items-center justify-center border border-gray-200 group-hover:bg-white transition-colors">
+                              <span className="text-[10px] sm:text-xs font-semibold text-gray-500">{new Date(log.checkInDate).toLocaleDateString('en-US', { month: 'short' })}</span>
+                              <span className="text-base sm:text-lg font-semibold text-black leading-none">{new Date(log.checkInDate).getDate()}</span>
                             </div>
-                            <div>
-                              <p className="text-sm font-semibold text-black flex items-center gap-2">
-                                <FiLogIn className="text-green-500" size={14} />
-                                {new Date(log.checkInDate).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}
+                            <div className="flex-1">
+                              <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm font-semibold text-black">
+                                <span className="flex items-center gap-1">
+                                  <FiLogIn className="text-green-500" size={14} />
+                                  {new Date(log.checkInDate).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}
+                                </span>
                                 {log.checkOutDate && (
                                   <>
-                                    <span className="text-gray-300 mx-1">|</span>
-                                    <FiLogOut className="text-orange-500" size={14} />
-                                    {new Date(log.checkOutDate).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}
+                                    <span className="hidden sm:inline text-gray-300">|</span>
+                                    <span className="flex items-center gap-1">
+                                      <FiLogOut className="text-orange-500" size={14} />
+                                      {new Date(log.checkOutDate).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}
+                                    </span>
                                   </>
                                 )}
-                              </p>
+                              </div>
                             </div>
                           </div>
                           
-                          <div className={`px-4 py-1.5 rounded-lg text-xs font-semibold ${
+                          <div className={`self-start sm:self-auto px-3 py-1 sm:px-4 sm:py-1.5 rounded-lg text-[10px] sm:text-xs font-semibold ${
                             log.checkOutDate ? 'bg-gray-200 text-gray-700' : 'bg-green-100 text-green-700'
                           }`}>
                             {log.checkOutDate ? 'Completed' : 'Active'}
